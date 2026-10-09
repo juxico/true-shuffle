@@ -47,7 +47,7 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 
 /* player */
 #player{margin:0 -16px 14px;padding:0 16px 18px;background:linear-gradient(180deg,var(--tint) 0%,var(--bg) 100%);transition:background .6s}
-.art{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--card2);object-fit:cover;display:block;margin:10px 0 18px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.art{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--card2);object-fit:cover;display:block;margin:28px 0 20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .titlerow{display:flex;align-items:center;gap:12px}
 .titlerow>div{flex:1;min-width:0}
 .ttl{font-size:22px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -65,6 +65,47 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 .modebtn .tag{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .dev{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--accent)}
 
+/* desktop view */
+body.desk main{max-width:1240px;padding:0 28px 32px}
+body.desk #app{display:grid;grid-template-columns:400px minmax(0,1fr);gap:28px;align-items:start}
+body.desk #player{margin:0;border-radius:16px;padding:0 24px 22px;position:sticky;top:12px}
+body.desk .art{margin-top:24px}
+body.desk #side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+body.desk #side>.card{margin:0}
+body.desk #lyrics{grid-column:1/-1}
+body.desk #lyBody{max-height:340px}
+body.desk #lyBody.tall{max-height:60vh}
+body.desk #side>.hint{grid-column:1/-1}
+.viewbtn{font-size:13px;padding:6px 10px;min-height:32px;border-radius:16px;background:var(--card2)}
+/* device picker */
+.dev{background:none;border:none;padding:6px 0;min-height:0;cursor:pointer;color:var(--accent);font-size:13px}
+.dev .chev{opacity:.8}
+.devsheet{background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;margin-top:6px}
+.dshead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.dshead .link{color:rgba(255,255,255,.75)}
+.dsnote{font-size:12px;color:rgba(255,255,255,.65);margin:6px 0 0}
+.devrow{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-radius:8px;padding:10px 6px;min-height:44px;text-align:left;cursor:pointer}
+.devrow:hover{background:rgba(255,255,255,.08)}
+.devrow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.devrow.on{color:var(--accent)}
+.devrow .st{font-size:12px}
+.pnote{font-size:12px;color:#ffd166;margin:8px 0 0}
+.pnote:empty{display:none}
+/* mix card (matches player) */
+.mixcard{background:linear-gradient(160deg,var(--tint) 0%,#1a1a1a 85%);border:none;color:#fff;transition:background .6s}
+.mixcard .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.mixcard .head b{font-size:16px}
+.mixcard .link{color:rgba(255,255,255,.75)}
+.mlabel{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.7);margin:12px 0 8px}
+.mnote{font-size:12px;color:rgba(255,255,255,.7);margin:6px 0 0}
+.mnote:empty{display:none}
+.mlinks{display:flex;gap:4px;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{background:rgba(255,255,255,.12);border:none;border-radius:999px;padding:8px 14px;min-height:36px;font-size:14px;color:#fff;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips button .c{opacity:.65;margin-left:6px;font-size:12px}
+.chips button.on{background:#fff;color:#000;font-weight:600}
+.chips button.on .c{opacity:.55}
+.buildbtn{width:100%;margin-top:16px;background:#fff;color:#000;border:none;border-radius:999px;font-weight:700;font-size:16px;min-height:50px}
 /* lyrics */
 #lyrics{background:var(--tint);border:none;transition:background .6s}
 #lyrics .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -95,9 +136,9 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 <body>
 <main>
   <div class="topbar">
-    <span style="width:72px"></span>
+    <button class="viewbtn" id="viewBtn" aria-label="Switch layout">Desktop view</button>
     <div class="ctx" id="ctxName">True Shuffle</div>
-    <button class="link hidden" id="signout" style="width:72px;text-align:right">Sign out</button>
+    <button class="link hidden" id="signout" style="text-align:right">Sign out</button>
   </div>
   <p id="status"></p>
 
@@ -145,23 +186,34 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
           <span class="tag" id="repTag"></span>
         </button>
       </div>
-      <div class="dev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg><span id="devName">No device</span></div>
+      <button class="dev" id="devBtn" aria-haspopup="true" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg><span id="devName">No device</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="devsheet hidden" id="devSheet">
+        <div class="dshead"><b>Play on</b><button class="link" id="refreshDev">Refresh</button></div>
+        <div id="devList"><p class="dsnote">Looking for devices…</p></div>
+        <p class="dsnote">Don't see your phone? Open the Spotify app on it, then tap Refresh.</p>
+      </div>
+      <p class="pnote" id="modeHint"></p>
     </div>
 
+    <div id="side">
     <div class="card" id="lyrics">
       <div class="head"><b>Lyrics</b><button class="link" id="lyExpand" style="color:#fff">Expand</button></div>
       <div id="lyBody"><p class="msg">Play a song to see lyrics.</p></div>
       <div class="src">Lyrics from LRCLIB, a free community library. Some songs won't have them.</div>
     </div>
 
-    <div class="card">
-      <p class="label">Shuffle mode</p>
-      <div class="row seg" id="modes">
-        <button data-mode="true">True shuffle</button>
-        <button data-mode="spotify">Spotify shuffle</button>
-        <button data-mode="off">Off</button>
+    <div class="card mixcard" id="mixCard">
+      <div class="head"><b>New mix</b><button class="link" id="reloadLists">Reload playlists</button></div>
+      <p class="mlabel">Mix from</p>
+      <div class="chips" id="sources"><span class="dsnote">Loading your playlists…</span></div>
+      <div class="mlinks"><button class="link" id="selAll">Select all</button><button class="link" id="selNone">Clear</button></div>
+      <p class="mnote" id="srcSummary"></p>
+      <p class="mlabel">Length</p>
+      <div class="chips" id="sizes">
+        <button data-v="50">50</button><button data-v="100">100</button><button data-v="150">150</button><button data-v="300">300</button><button data-v="500">500</button><button data-v="all">Everything</button>
       </div>
-      <p class="hint" id="modeHint">Tap a mode to apply it to what's playing.</p>
+      <button class="buildbtn" id="build">Build new mix and play</button>
+      <p class="mnote" id="rotation"></p>
     </div>
 
     <div class="card" id="proof">
@@ -179,44 +231,7 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
       <p class="hint">Spotify shares your last 50 plays (songs played at least about 30 seconds). Nothing here is stored anywhere new.</p>
     </div>
 
-    <div class="card">
-      <p class="label">Mix from</p>
-      <div class="list" id="sources"><label><span class="n">Loading your playlists…</span></label></div>
-      <div class="links"><button class="link" id="selAll">Select all</button><button class="link" id="selNone">Clear</button><button class="link" id="reloadLists">Reload</button></div>
-      <p class="hint" id="srcSummary"></p>
-      <div class="row" style="margin:10px 0">
-        <select id="count" aria-label="Mix size">
-          <option value="50">50 songs</option>
-          <option value="100">100 songs</option>
-          <option value="150" selected>150 songs</option>
-          <option value="300">300 songs</option>
-          <option value="500">500 songs</option>
-          <option value="all">Everything selected</option>
-        </select>
-      </div>
-      <button class="primary" id="build">Build new mix and play</button>
-      <p class="hint" id="rotation"></p>
     </div>
-
-    <div class="card">
-      <p class="label">Play a playlist as-is</p>
-      <div class="row">
-        <select id="playlistPick" aria-label="Playlist"><option value="">Loading…</option></select>
-        <button id="playPick" style="flex:0 0 72px">Play</button>
-      </div>
-      <p class="hint">Uses the shuffle mode above. "Play only" playlists are ones you follow: Spotify doesn't let outside apps read their songs, so they can't be true-shuffled. Copy their songs into your own playlist to mix them.</p>
-    </div>
-
-    <div class="card">
-      <p class="label">Play on</p>
-      <div class="row">
-        <select id="device" aria-label="Device"><option value="">Looking for devices…</option></select>
-        <button id="refreshDev" style="flex:0 0 52px" aria-label="Refresh devices">&#8635;</button>
-      </div>
-      <p class="hint">Don't see your phone? Open the Spotify app on it, then tap refresh.</p>
-    </div>
-
-    <p class="hint">Smart Shuffle can only be switched in the Spotify app. Spotify doesn't let outside apps change it.</p>
   </section>
 </main>
 <script>
@@ -341,22 +356,29 @@ async function loadPlaylists(){
       mixable: (p.owner && p.owner.id === me.id) || p.collaborative }));
   const mix = all.find(p => p.name === MIX_NAME && p.owner && p.owner.id === me.id);
   if (mix) { mixId = mix.id; store.set("ts_mix_id", mixId); }
-  renderSources(); renderPick();
+  renderSources();
 }
 
 function savedSel(){ try { return JSON.parse(store.get("ts_sources") || "null"); } catch { return null; } }
 
 function renderSources(){
   const sel = new Set(savedSel() || [LIKED]);
-  const rows = [{ id: LIKED, name: "Liked Songs", count: null, mixable: true }].concat(playlists.filter(p => p.mixable));
+  const rows = [{ id: LIKED, name: "Liked Songs", count: null }].concat(playlists.filter(p => p.mixable));
   $("sources").innerHTML = rows.map(p =>
-    `<label><input type="checkbox" value="${esc(p.id)}" ${sel.has(p.id) ? "checked" : ""}><span class="n">${esc(p.name)}</span><span class="c">${p.count == null ? "" : p.count}</span></label>`).join("");
-  $("sources").querySelectorAll("input").forEach(i => i.onchange = saveSources);
+    `<button data-id="${esc(p.id)}" class="${sel.has(p.id) ? "on" : ""}" aria-pressed="${sel.has(p.id)}">${esc(p.name)}${p.count == null ? "" : `<span class="c">${p.count}</span>`}</button>`).join("");
+  $("sources").querySelectorAll("button").forEach(b => b.onclick = () => { b.classList.toggle("on"); b.setAttribute("aria-pressed", b.classList.contains("on")); saveSources(); });
   summarize();
 }
 
-function selectedSources(){ return [...$("sources").querySelectorAll("input:checked")].map(i => i.value); }
+function selectedSources(){ return [...$("sources").querySelectorAll("button.on")].map(b => b.dataset.id); }
 function saveSources(){ store.set("ts_sources", JSON.stringify(selectedSources())); summarize(); }
+function setAllSources(on){ $("sources").querySelectorAll("button").forEach(b => { b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); }); saveSources(); }
+
+let mixSize = store.get("ts_count") || "150";
+function paintSizes(){ $("sizes").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === mixSize)); }
+$("sizes").querySelectorAll("button").forEach(b => b.onclick = () => { mixSize = b.dataset.v; store.set("ts_count", mixSize); paintSizes(); });
+paintSizes();
+
 function summarize(){
   const ids = selectedSources();
   const n = ids.filter(id => id !== LIKED).reduce((a, id) => a + ((playlists.find(p => p.id === id) || {}).count || 0), 0);
@@ -364,14 +386,6 @@ function summarize(){
     : `${ids.length} selected${ids.includes(LIKED) ? " (Liked Songs plus" : " ("}${n ? " about " + n + " playlist songs)" : " no playlists)"}. Duplicates are removed.`;
 }
 
-function renderPick(){
-  const own = playlists.filter(p => p.mixable), followed = playlists.filter(p => !p.mixable);
-  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${p.mixable ? "" : " (play only)"}</option>`;
-  $("playlistPick").innerHTML = `<option value="${LIKED}">Liked Songs</option>` +
-    (own.length ? `<optgroup label="Your playlists">${own.map(opt).join("")}</optgroup>` : "") +
-    (followed.length ? `<optgroup label="Followed (play only)">${followed.map(opt).join("")}</optgroup>` : "");
-  const last = store.get("ts_pick"); if (last && [...$("playlistPick").options].some(o => o.value === last)) $("playlistPick").value = last;
-}
 
 async function findOrCreatePlaylist(name, description){
   me = me || await api("GET", "me");
@@ -430,7 +444,7 @@ let mixId = store.get("ts_mix_id");
 let busy = false;
 
 async function buildFrom(sourceIds, countSel){
-  if (busy) return; busy = true; $("build").disabled = true; $("playPick").disabled = true;
+  if (busy) return; busy = true; $("build").disabled = true;
   try {
     if (!sourceIds.length) throw new Error("Pick at least one playlist or Liked Songs to mix from.");
     const seen = new Set(), tracks = [];
@@ -470,10 +484,11 @@ async function buildFrom(sourceIds, countSel){
     await playContext(`spotify:playlist:${mixId}`, false);
     status(`New ${mix.length}-song mix is playing.`);
   } catch (e) { handleErr(e); }
-  finally { busy = false; $("build").disabled = false; $("playPick").disabled = false; }
+  finally { busy = false; $("build").disabled = false; }
 }
 
-function deviceParam(){ const d = $("device").value; return d ? { device_id: d } : {}; }
+let devId = null;
+function deviceParam(){ return devId ? { device_id: devId } : {}; }
 
 async function playContext(contextUri, shuffle){
   const dev = deviceParam();
@@ -488,24 +503,6 @@ async function playContext(contextUri, shuffle){
 
 function likedContext(){ return `spotify:user:${me.id}:collection`; }
 
-async function playPicked(){
-  const id = $("playlistPick").value; store.set("ts_pick", id);
-  const mode = currentPref();
-  try {
-    me = me || await api("GET", "me");
-    const p = playlists.find(x => x.id === id);
-    if (mode === "true"){
-      if (id !== LIKED && p && !p.mixable){
-        status("That's a followed playlist, so it can't be true-shuffled. Playing it with Spotify shuffle instead.");
-        await playContext(`spotify:playlist:${id}`, true); return;
-      }
-      return buildFrom([id], $("count").value);
-    }
-    const uri = id === LIKED ? likedContext() : `spotify:playlist:${id}`;
-    await playContext(uri, mode === "spotify");
-    status(`Playing ${id === LIKED ? "Liked Songs" : p ? p.name : "playlist"}${mode === "spotify" ? " with Spotify shuffle" : " in order"}.`);
-  } catch (e) { handleErr(e); }
-}
 
 let pref = store.get("ts_mode") || "true";
 function currentPref(){ return pref; }
@@ -526,20 +523,36 @@ async function setMode(mode){
   } catch (e) { handleErr(e); }
 }
 
+const DEV_ICON = { Computer: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/>', Smartphone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>', Speaker: '<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="6.5" r="1"/>' };
 async function loadDevices(){
   try {
     const { devices = [] } = await api("GET", "me/player/devices");
-    const sel = $("device"), keep = sel.value;
-    sel.innerHTML = devices.length ? "" : '<option value="">No devices. Open Spotify somewhere.</option>';
-    devices.forEach(d => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.name + (d.is_active ? " (active)" : ""); sel.appendChild(o); });
     const active = devices.find(d => d.is_active);
-    if (devices.some(d => d.id === keep)) sel.value = keep; else if (active) sel.value = active.id;
+    if (!devices.some(d => d.id === devId)) devId = active ? active.id : (devices[0] && devices[0].id) || null;
+    if (active) devId = active.id;
+    $("devList").innerHTML = devices.length ? devices.map(d =>
+      `<button class="devrow ${d.id === devId ? "on" : ""}" data-id="${esc(d.id)}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${DEV_ICON[d.type] || DEV_ICON.Speaker}</svg><span class="nm">${esc(d.name)}</span><span class="st">${d.is_active ? "Playing here" : ""}</span></button>`).join("")
+      : '<p class="dsnote">No devices found. Open Spotify on your phone or PC.</p>';
+    $("devList").querySelectorAll(".devrow").forEach(b => b.onclick = () => switchDevice(b.dataset.id));
+    if (!np && active) $("devName").textContent = active.name;
   } catch (e) { handleErr(e); }
 }
 
-async function transferIfNeeded(){
-  const id = $("device").value; if (!id) return;
-  try { await api("PUT", "me/player", { body: { device_ids: [id], play: playing } }); status("Switched device."); } catch (e) { handleErr(e); }
+async function switchDevice(id){
+  devId = id;
+  try {
+    await api("PUT", "me/player", { body: { device_ids: [id], play: true } });
+    status("Switched device.");
+    toggleDevSheet(false);
+    setTimeout(() => { loadDevices(); refreshNowPlaying(); }, 900);
+  } catch (e) { handleErr(e); }
+}
+
+function toggleDevSheet(force){
+  const open = force !== undefined ? force : $("devSheet").classList.contains("hidden");
+  $("devSheet").classList.toggle("hidden", !open);
+  $("devBtn").setAttribute("aria-expanded", open);
+  if (open) loadDevices();
 }
 
 function handleErr(e){ if (e.signedOut) return signOut(); status(e.message || String(e), true); }
@@ -627,9 +640,7 @@ async function refreshNowPlaying(){
     if (np.contextUri && mixId && np.contextUri === `spotify:playlist:${mixId}` && !np.shuffle) mode = "true";
     else if (np.shuffle) mode = "spotify";
     pref = mode; paintModes(mode); paintRepeat(np.repeat);
-    $("modeHint").textContent = np.smart ? "Smart Shuffle is on. Turn it off in the Spotify app for True shuffle."
-      : { true: "Playing your mix in order. No repeats until everything you picked has played.",
-          spotify: "Spotify's own shuffle. Expect repeats.", off: "Playing in order." }[mode];
+    $("modeHint").textContent = np.smart ? "Smart Shuffle is on. Turn it off in the Spotify app so True Shuffle plays in order." : "";
     if (changed) { loadLyrics(item); if (proofLoaded) setTimeout(loadProof, 4000); }
     paintProgress();
   } catch (e) { if (e.signedOut) signOut(); }
@@ -669,18 +680,29 @@ function parseLrc(t){
   });
   return out.sort((a, b) => a.t - b.t);
 }
+function cleanTitle(t){
+  return t.replace(/\s+-\s+.*$/, "")                                   // "Song - Remastered 2016", "Song - Live"
+          .replace(/\s*[(\[][^)\]]*(remaster|version|live|edit|mix|mono|stereo|feat\.?|with )[^)\]]*[)\]]/ig, "")
+          .trim() || t;
+}
+async function getJson(url, ms = 5000){
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
+  try { const r = await fetch(url, { signal: ctl.signal }); return r.ok ? await r.json() : null; }
+  catch { return null; } finally { clearTimeout(timer); }
+}
 async function fetchLyrics(item){
-  const track = item.name, artist = (item.artists && item.artists[0] && item.artists[0].name) || "", album = (item.album && item.album.name) || "", dur = Math.round((item.duration_ms || 0) / 1000);
-  try {
-    const r = await fetch("https://lrclib.net/api/get?" + new URLSearchParams({ track_name: track, artist_name: artist, album_name: album, duration: dur }));
-    if (r.ok) { const j = await r.json(); if (j.syncedLyrics || j.plainLyrics || j.instrumental) return j; }
-  } catch {}
-  const clean = track.replace(/\s*[-(\[].*(remaster|version|live|edit|mix|feat).*$/i, "");
-  const r2 = await fetch("https://lrclib.net/api/search?" + new URLSearchParams({ track_name: clean, artist_name: artist }));
-  if (!r2.ok) return null;
-  const list = (await r2.json()) || [];
+  const track = cleanTitle(item.name), artist = (item.artists && item.artists[0] && item.artists[0].name) || "";
+  const dur = Math.round((item.duration_ms || 0) / 1000);
+  const ok = x => x && (x.syncedLyrics || x.plainLyrics || x.instrumental);
   const score = x => (x.syncedLyrics ? 0 : 1000) + Math.abs((x.duration || 0) - dur);
-  return list.filter(x => x.syncedLyrics || x.plainLyrics || x.instrumental).sort((a, b) => score(a) - score(b))[0] || null;
+  const best = list => (list || []).filter(ok).sort((a, b) => score(a) - score(b))[0] || null;
+  // Search first: fast, and tolerant of album and title differences.
+  let hit = best(await getJson("https://lrclib.net/api/search?" + new URLSearchParams({ track_name: track, artist_name: artist })));
+  if (hit && Math.abs((hit.duration || dur) - dur) <= 8) return hit;
+  const exact = await getJson("https://lrclib.net/api/get?" + new URLSearchParams({ track_name: track, artist_name: artist, album_name: (item.album && item.album.name) || "", duration: dur }), 6000);
+  if (ok(exact)) return exact;
+  if (hit) return hit;
+  return best(await getJson("https://lrclib.net/api/search?" + new URLSearchParams({ q: track + " " + artist })));
 }
 async function loadLyrics(item){
   const key = item.id; lyFor = key; showLyricsMsg("Loading lyrics…");
@@ -745,6 +767,16 @@ async function loadProof(){
 $("proofRefresh").onclick = loadProof;
 setInterval(() => { if (playing && !document.hidden) paintProgress(); }, 250);
 
+// ---------- layout ----------
+function applyView(v){
+  const desk = v === "desk" || (v !== "phone" && window.innerWidth >= 1000);
+  document.body.classList.toggle("desk", desk);
+  $("viewBtn").textContent = desk ? "Phone view" : "Desktop view";
+}
+$("viewBtn").onclick = () => { const next = document.body.classList.contains("desk") ? "phone" : "desk"; store.set("ts_view", next); applyView(next); lyIdx = -1; paintProgress && paintProgress(); };
+window.addEventListener("resize", () => applyView(store.get("ts_view")));
+applyView(store.get("ts_view"));
+
 // ---------- wiring ----------
 $("redir").textContent = REDIRECT;
 $("saveCid").onclick = () => { const v = $("cid").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { $("cid").style.borderColor = "var(--danger)"; $("cid").value = ""; $("cid").placeholder = "That doesn't look like a Client ID (32 characters)"; return; } store.set("ts_cid", v); login(); };
@@ -752,13 +784,12 @@ $("cid").oninput = () => { $("cid").style.borderColor = ""; };
 $("loginBtn").onclick = login;
 $("resetCid").onclick = () => { store.del("ts_cid"); show("setup"); };
 $("signout").onclick = signOut;
-$("build").onclick = () => buildFrom(selectedSources(), $("count").value);
-$("playPick").onclick = playPicked;
-$("selAll").onclick = () => { $("sources").querySelectorAll("input").forEach(i => i.checked = true); saveSources(); };
-$("selNone").onclick = () => { $("sources").querySelectorAll("input").forEach(i => i.checked = false); saveSources(); };
+$("build").onclick = () => buildFrom(selectedSources(), mixSize);
+$("selAll").onclick = () => setAllSources(true);
+$("selNone").onclick = () => setAllSources(false);
 $("reloadLists").onclick = () => loadPlaylists().then(() => status("Playlists reloaded.")).catch(handleErr);
 $("refreshDev").onclick = loadDevices;
-$("device").onchange = transferIfNeeded;
+$("devBtn").onclick = () => toggleDevSheet();
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("pp").onclick = () => control("pp");
 $("shuf").onclick = cycleShuffle;
