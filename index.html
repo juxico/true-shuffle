@@ -12,36 +12,31 @@
 <link rel="icon" href="icon.png">
 <title>True Shuffle</title>
 <style>
-:root{--bg:#121212;--card:#1e1e1e;--card2:#2a2a2a;--text:#f5f5f5;--muted:#a7a7a7;--accent:#1ed760;--on-accent:#06240f;--border:#333;--danger:#ff6b6b;--r:12px}
-@media (prefers-color-scheme: light){:root{--bg:#f6f6f4;--card:#fff;--card2:#efefec;--text:#161616;--muted:#5f5f5a;--accent:#169c46;--on-accent:#fff;--border:#dcdcd6;--danger:#c0392b}}
+:root{--bg:#121212;--card:#1e1e1e;--card2:#2a2a2a;--text:#f5f5f5;--muted:#a7a7a7;--accent:#1ed760;--on-accent:#06240f;--border:#333;--danger:#ff6b6b;--r:12px;--tint:#3a3a3a}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-main{max-width:440px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
-h1{font-size:20px;font-weight:600;margin:0 0 16px;display:flex;align-items:center;justify-content:space-between}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+main{max-width:480px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 0 6px}
+.topbar .ctx{font-size:15px;font-weight:600;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px}
 .label{font-size:13px;color:var(--muted);margin:0 0 8px}
 .hint{font-size:13px;color:var(--muted);margin:8px 0 0}
 button,select,input{font:inherit;color:inherit}
 button{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 10px;cursor:pointer;min-height:44px}
-button:active{transform:scale(.98)}
+button:active{transform:scale(.97)}
 button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600;width:100%}
 button.link{background:none;border:none;color:var(--muted);font-size:14px;padding:6px;min-height:0}
+button.icon{background:none;border:none;padding:8px;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;color:var(--text)}
 button[disabled]{opacity:.5}
 select,input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 10px;min-height:44px}
 .row{display:flex;gap:8px}
 .row>*{flex:1}
 .seg button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
-.np{display:flex;gap:12px;align-items:center}
-.np img,.np .art{width:64px;height:64px;border-radius:8px;background:var(--card2);flex:none;object-fit:cover}
-.np .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.np .a{font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.np>div{min-width:0}
-.controls{display:flex;justify-content:center;gap:12px;margin-top:12px}
-.controls button{width:64px;font-size:20px}
-#status{font-size:14px;min-height:21px;margin:0 0 14px;color:var(--muted)}
+#status{font-size:14px;min-height:0;margin:0 0 10px;color:var(--muted)}
+#status:empty{display:none}
 #status.err{color:var(--danger)}
 code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;word-break:break-all}
-.hidden{display:none}
+.hidden{display:none !important}
 .list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--card2)}
 .list label{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;min-height:44px}
 .list label:last-child{border-bottom:none}
@@ -49,11 +44,61 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 .list .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list .c{font-size:13px;color:var(--muted);flex:none}
 .links{display:flex;gap:4px;margin-top:6px}
+
+/* player */
+#player{margin:0 -16px 14px;padding:0 16px 18px;background:linear-gradient(180deg,var(--tint) 0%,var(--bg) 100%);transition:background .6s}
+.art{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--card2);object-fit:cover;display:block;margin:10px 0 18px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.titlerow{display:flex;align-items:center;gap:12px}
+.titlerow>div{flex:1;min-width:0}
+.ttl{font-size:22px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.art2{font-size:16px;color:rgba(255,255,255,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{position:relative;height:28px;margin-top:14px;cursor:pointer;touch-action:none}
+.bar .track{position:absolute;left:0;right:0;top:12px;height:4px;border-radius:2px;background:rgba(255,255,255,.25)}
+.bar .fill{position:absolute;left:0;top:12px;height:4px;border-radius:2px;background:#fff;width:0}
+.bar .knob{position:absolute;top:8px;width:12px;height:12px;border-radius:50%;background:#fff;margin-left:-6px;left:0}
+.times{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.65);margin-top:-2px}
+.ctrls{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.ctrls .big{width:64px;height:64px;border-radius:50%;background:#fff;color:#000;border:none;display:inline-flex;align-items:center;justify-content:center}
+.ctrls svg{display:block}
+.modebtn{position:relative}
+.modebtn.on{color:var(--accent)}
+.modebtn .tag{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.dev{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--accent)}
+
+/* lyrics */
+#lyrics{background:var(--tint);border:none;transition:background .6s}
+#lyrics .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+#lyrics .head b{font-size:16px}
+#lyBody{max-height:260px;overflow-y:auto;scroll-behavior:smooth;transition:max-height .3s}
+#lyBody.tall{max-height:70vh}
+#lyBody p{margin:0 0 10px;font-size:20px;font-weight:700;line-height:1.3;color:rgba(0,0,0,.55);transition:color .3s}
+#lyBody p.now{color:#fff}
+#lyBody p.past{color:rgba(255,255,255,.6)}
+#lyBody.plain p{color:#fff;font-size:18px}
+#lyBody .msg{font-size:15px;font-weight:400;color:rgba(255,255,255,.8)}
+.src{font-size:11px;color:rgba(255,255,255,.6);margin-top:6px}
+
+/* proof */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.stat{background:var(--card2);border-radius:10px;padding:10px 12px}
+.stat .v{font-size:22px;font-weight:700}
+.stat .k{font-size:12px;color:var(--muted)}
+.cmp{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;font-size:14px;margin:6px 0 10px}
+.cmp .h{font-size:12px;color:var(--muted)}
+.abar{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
+.abar .nm{width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.abar .b{height:8px;border-radius:4px;background:var(--accent)}
+.meter{height:8px;border-radius:4px;background:var(--card2);overflow:hidden;margin:6px 0 2px}
+.meter i{display:block;height:100%;background:var(--accent);width:0}
 </style>
 </head>
 <body>
 <main>
-  <h1>True Shuffle <button class="link hidden" id="signout">Sign out</button></h1>
+  <div class="topbar">
+    <span style="width:72px"></span>
+    <div class="ctx" id="ctxName">True Shuffle</div>
+    <button class="link hidden" id="signout" style="width:72px;text-align:right">Sign out</button>
+  </div>
   <p id="status"></p>
 
   <section id="setup" class="hidden">
@@ -75,20 +120,38 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
   </section>
 
   <section id="app" class="hidden">
-    <div class="card">
-      <div class="np">
-        <img id="art" class="hidden" alt="">
-        <div id="artPh" class="art"></div>
+    <div id="player">
+      <img id="art" class="art" alt="" crossorigin="anonymous">
+      <div class="titlerow">
         <div>
-          <div class="t" id="title">Nothing playing</div>
-          <div class="a" id="artist">Open Spotify on a device</div>
+          <div class="ttl" id="title">Nothing playing</div>
+          <div class="art2" id="artist">Open Spotify on a device</div>
         </div>
       </div>
-      <div class="controls">
-        <button id="prev" aria-label="Previous">&#9198;&#xFE0E;</button>
-        <button id="pp" aria-label="Play or pause">&#9654;&#xFE0E;</button>
-        <button id="next" aria-label="Next">&#9197;&#xFE0E;</button>
+      <div class="bar" id="bar" role="slider" aria-label="Song position" tabindex="0">
+        <div class="track"></div><div class="fill" id="fill"></div><div class="knob" id="knob"></div>
       </div>
+      <div class="times"><span id="tNow">0:00</span><span id="tLeft">-0:00</span></div>
+      <div class="ctrls">
+        <button class="icon modebtn" id="shuf" aria-label="Shuffle mode">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3c3 0 5 10 9 10h5"/><path d="M3 17h3c1.5 0 2.6-1.4 3.6-3.2M12.4 10.2C13.4 8.4 14.5 7 16 7h4"/><path d="M17 4l3 3-3 3"/><path d="M17 14l3 3-3 3"/></svg>
+          <span class="tag" id="shufTag"></span>
+        </button>
+        <button class="icon" id="prev" aria-label="Previous"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="2.6" height="14" rx="1"/><path d="M20 5.8v12.4c0 .8-.9 1.3-1.6.8L8.6 12.8a1 1 0 0 1 0-1.6l9.8-6.2c.7-.5 1.6 0 1.6.8z"/></svg></button>
+        <button class="big" id="pp" aria-label="Play or pause"></button>
+        <button class="icon" id="next" aria-label="Next"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><rect x="17.4" y="5" width="2.6" height="14" rx="1"/><path d="M4 5.8v12.4c0 .8.9 1.3 1.6.8l9.8-6.2a1 1 0 0 0 0-1.6L5.6 5c-.7-.5-1.6 0-1.6.8z"/></svg></button>
+        <button class="icon modebtn" id="rep" aria-label="Repeat">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>
+          <span class="tag" id="repTag"></span>
+        </button>
+      </div>
+      <div class="dev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg><span id="devName">No device</span></div>
+    </div>
+
+    <div class="card" id="lyrics">
+      <div class="head"><b>Lyrics</b><button class="link" id="lyExpand" style="color:#fff">Expand</button></div>
+      <div id="lyBody"><p class="msg">Play a song to see lyrics.</p></div>
+      <div class="src">Lyrics from LRCLIB, a free community library. Some songs won't have them.</div>
     </div>
 
     <div class="card">
@@ -99,6 +162,21 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
         <button data-mode="off">Off</button>
       </div>
       <p class="hint" id="modeHint">Tap a mode to apply it to what's playing.</p>
+    </div>
+
+    <div class="card" id="proof">
+      <div class="row" style="align-items:center;margin-bottom:8px"><p class="label" style="margin:0">Proof it's working</p><button class="link" id="proofRefresh" style="flex:0 0 auto">Refresh</button></div>
+      <div class="stats">
+        <div class="stat"><div class="v" id="pUnique">–</div><div class="k">Unique songs in your last plays</div></div>
+        <div class="stat"><div class="v" id="pRepeats">–</div><div class="k">Repeats in your last plays</div></div>
+      </div>
+      <div class="cmp" id="pCmp"></div>
+      <p class="label" style="margin-top:4px">Top artists in your last plays</p>
+      <div id="pArtists"></div>
+      <p class="label" style="margin-top:12px">Rotation progress</p>
+      <div class="meter"><i id="pMeter"></i></div>
+      <p class="hint" id="pRotation" style="margin-top:4px">Build a mix to start the rotation.</p>
+      <p class="hint">Spotify shares your last 50 plays (songs played at least about 30 seconds). Nothing here is stored anywhere new.</p>
     </div>
 
     <div class="card">
@@ -126,7 +204,7 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
         <select id="playlistPick" aria-label="Playlist"><option value="">Loading…</option></select>
         <button id="playPick" style="flex:0 0 72px">Play</button>
       </div>
-      <p class="hint">Uses the Spotify shuffle or Off setting above. Playlists marked "play only" are ones you follow. Spotify doesn't let outside apps read their songs, so they can't be true-shuffled. To mix one, copy its songs into a playlist of your own in the Spotify app.</p>
+      <p class="hint">Uses the shuffle mode above. "Play only" playlists are ones you follow: Spotify doesn't let outside apps read their songs, so they can't be true-shuffled. Copy their songs into your own playlist to mix them.</p>
     </div>
 
     <div class="card">
@@ -141,10 +219,9 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
     <p class="hint">Smart Shuffle can only be switched in the Spotify app. Spotify doesn't let outside apps change it.</p>
   </section>
 </main>
-
 <script>
 "use strict";
-const SCOPES = "user-library-read playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-read-playback-state user-modify-playback-state user-read-currently-playing";
+const SCOPES = "user-library-read playlist-read-private playlist-read-collaborative user-read-recently-played playlist-modify-private playlist-modify-public user-read-playback-state user-modify-playback-state user-read-currently-playing";
 const MIX_NAME = "True Shuffle";
 const HIST_NAME = "True Shuffle · history";
 const HIST_MAX = 3000;
@@ -384,7 +461,9 @@ async function buildFrom(sourceIds, countSel){
     const newHist = mixUris.concat(history.filter(u => !inMix.has(u))).slice(0, HIST_MAX);
     await replacePlaylist(histId, newHist);
 
-    const heard = tracks.filter(t => new Set(newHist).has(t.uri)).length;
+    const histSet = new Set(newHist);
+    const heard = tracks.filter(t => histSet.has(t.uri)).length;
+    store.set("ts_pool", String(tracks.length)); store.set("ts_heard", String(heard));
     $("rotation").textContent = `Rotation: ${heard} of ${tracks.length} songs in this selection heard recently.`;
     store.set("ts_rotation", $("rotation").textContent);
 
@@ -463,10 +542,67 @@ async function transferIfNeeded(){
   try { await api("PUT", "me/player", { body: { device_ids: [id], play: playing } }); status("Switched device."); } catch (e) { handleErr(e); }
 }
 
-let playing = false;
+function handleErr(e){ if (e.signedOut) return signOut(); status(e.message || String(e), true); }
+
+
+// ================= now playing =================
+let playing = false, np = null;   // np: { id, name, artists, album, durationMs, progressMs, at, contextUri, shuffle, repeat, smart }
+const ICON_PLAY = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.8v14.4c0 .8.9 1.3 1.6.8l11-7.2a1 1 0 0 0 0-1.6l-11-7.2C7.9 3.5 7 4 7 4.8z"/></svg>';
+const ICON_PAUSE = '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.2"/><rect x="14" y="4" width="5" height="16" rx="1.2"/></svg>';
+$("pp").innerHTML = ICON_PLAY;
+
+const fmt = ms => { ms = Math.max(0, ms || 0); const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function livePos(){ if (!np) return 0; return Math.min(np.durationMs, np.progressMs + (playing ? Date.now() - np.at : 0)); }
+
+let dragging = false;
+function paintProgress(){
+  if (!np) { $("fill").style.width = "0"; $("knob").style.left = "0"; $("tNow").textContent = "0:00"; $("tLeft").textContent = "-0:00"; return; }
+  const pos = dragging ? dragPos : livePos(), pct = np.durationMs ? pos / np.durationMs * 100 : 0;
+  $("fill").style.width = pct + "%"; $("knob").style.left = pct + "%";
+  $("tNow").textContent = fmt(pos); $("tLeft").textContent = "-" + fmt(np.durationMs - pos);
+  syncLyrics(pos);
+}
+
+let dragPos = 0;
+function posFromEvent(e){ const r = $("bar").getBoundingClientRect(); const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left; return Math.max(0, Math.min(1, x / r.width)) * (np ? np.durationMs : 0); }
+$("bar").addEventListener("pointerdown", e => { if (!np) return; dragging = true; dragPos = posFromEvent(e); $("bar").setPointerCapture(e.pointerId); paintProgress(); });
+$("bar").addEventListener("pointermove", e => { if (!dragging) return; dragPos = posFromEvent(e); paintProgress(); });
+$("bar").addEventListener("pointerup", async () => {
+  if (!dragging) return; dragging = false;
+  const ms = Math.round(dragPos); np.progressMs = ms; np.at = Date.now(); paintProgress();
+  try { await api("PUT", "me/player/seek", { params: { ...deviceParam(), position_ms: ms } }); } catch (e) { handleErr(e); }
+});
+
 function paintModes(mode){
   document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
+  $("shuf").classList.toggle("on", mode !== "off");
+  $("shufTag").textContent = mode === "true" ? "TRUE" : mode === "spotify" ? "SPOTIFY" : "";
 }
+function paintRepeat(r){ $("rep").classList.toggle("on", r && r !== "off"); $("repTag").textContent = r === "track" ? "1" : ""; }
+
+let lastArtUrl = "", ctxCache = {};
+async function contextName(uri){
+  if (!uri) return "";
+  if (mixId && uri === `spotify:playlist:${mixId}`) return "True Shuffle";
+  if (/:collection$/.test(uri)) return "Liked Songs";
+  if (ctxCache[uri]) return ctxCache[uri];
+  const pl = playlists.find(p => uri === `spotify:playlist:${p.id}`);
+  if (pl) return (ctxCache[uri] = pl.name);
+  return (ctxCache[uri] = uri.split(":")[1] === "album" ? "Album" : uri.split(":")[1] === "artist" ? "Artist" : "Playlist");
+}
+
+function tintFrom(img){
+  try {
+    const c = document.createElement("canvas"); c.width = c.height = 24;
+    const g = c.getContext("2d"); g.drawImage(img, 0, 0, 24, 24);
+    const d = g.getImageData(0, 0, 24, 24).data; let r = 0, gg = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4){ const mx = Math.max(d[i], d[i+1], d[i+2]), mn = Math.min(d[i], d[i+1], d[i+2]); const w = (mx - mn) + 20; r += d[i] * w; gg += d[i+1] * w; b += d[i+2] * w; n += w; }
+    r /= n; gg /= n; b /= n;
+    const k = Math.min(1, 150 / Math.max(r, gg, b, 1));   // keep it dark enough for white text
+    document.documentElement.style.setProperty("--tint", `rgb(${Math.round(r*k)},${Math.round(gg*k)},${Math.round(b*k)})`);
+  } catch { document.documentElement.style.setProperty("--tint", "#3a3a3a"); }
+}
+$("art").addEventListener("load", () => tintFrom($("art")));
 
 async function refreshNowPlaying(){
   if (document.hidden) return;
@@ -474,21 +610,28 @@ async function refreshNowPlaying(){
     const s = await api("GET", "me/player", { okMissing: true });
     const item = s && s.item;
     playing = !!(s && s.is_playing);
-    $("pp").innerHTML = playing ? "&#10074;&#10074;" : "&#9654;&#xFE0E;";
-    $("title").textContent = item ? item.name : "Nothing playing";
-    $("artist").textContent = item ? (item.artists || []).map(a => a.name).join(", ") : "Open Spotify on a device";
-    const img = item && item.album && item.album.images && item.album.images[0];
-    $("art").classList.toggle("hidden", !img); $("artPh").classList.toggle("hidden", !!img);
-    if (img && $("art").src !== img.url) $("art").src = img.url;
+    $("pp").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+    if (!item){ np = null; $("title").textContent = "Nothing playing"; $("artist").textContent = "Open Spotify on a device"; $("devName").textContent = (s && s.device && s.device.name) || "No device"; paintProgress(); showLyricsMsg("Play a song to see lyrics."); return; }
+    const changed = !np || np.id !== item.id;
+    np = { id: item.id, name: item.name, artists: (item.artists || []).map(a => a.name), album: item.album && item.album.name,
+      durationMs: item.duration_ms || 0, progressMs: s.progress_ms || 0, at: Date.now(),
+      contextUri: s.context && s.context.uri, shuffle: s.shuffle_state, repeat: s.repeat_state, smart: s.smart_shuffle };
+    $("title").textContent = np.name;
+    $("artist").textContent = np.artists.join(", ");
+    $("devName").textContent = (s.device && s.device.name) || "";
+    const img = item.album && item.album.images && item.album.images[0];
+    if (img && img.url !== lastArtUrl){ lastArtUrl = img.url; $("art").src = img.url; }
+    $("ctxName").textContent = (await contextName(np.contextUri)) || "True Shuffle";
 
     let mode = "off";
-    if (s && s.context && mixId && s.context.uri === `spotify:playlist:${mixId}` && !s.shuffle_state) mode = "true";
-    else if (s && s.shuffle_state) mode = "spotify";
-    if (s) { pref = mode; paintModes(mode); }
-    $("modeHint").textContent = !s ? "Start playing something to switch modes."
-      : s.smart_shuffle ? "Smart Shuffle is on. Turn it off in the Spotify app for True shuffle."
+    if (np.contextUri && mixId && np.contextUri === `spotify:playlist:${mixId}` && !np.shuffle) mode = "true";
+    else if (np.shuffle) mode = "spotify";
+    pref = mode; paintModes(mode); paintRepeat(np.repeat);
+    $("modeHint").textContent = np.smart ? "Smart Shuffle is on. Turn it off in the Spotify app for True shuffle."
       : { true: "Playing your mix in order. No repeats until everything you picked has played.",
           spotify: "Spotify's own shuffle. Expect repeats.", off: "Playing in order." }[mode];
+    if (changed) { loadLyrics(item); if (proofLoaded) setTimeout(loadProof, 4000); }
+    paintProgress();
   } catch (e) { if (e.signedOut) signOut(); }
 }
 
@@ -498,16 +641,109 @@ async function control(kind){
     if (kind === "pp"){
       const s = await api("GET", "me/player", { okMissing: true });   // fresh state, so we never "play" while already playing
       const isPlaying = !!(s && s.is_playing);
+      if (np) { np.progressMs = livePos(); np.at = Date.now(); }
+      playing = !isPlaying; $("pp").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
       await api("PUT", isPlaying ? "me/player/pause" : "me/player/play", { params: dev });
     } else {
       await api("POST", kind === "next" ? "me/player/next" : "me/player/previous", { params: dev });
     }
     status("");
     setTimeout(refreshNowPlaying, 700);
-  } catch (e) { handleErr(e); }
+  } catch (e) { handleErr(e); setTimeout(refreshNowPlaying, 300); }
 }
 
-function handleErr(e){ if (e.signedOut) return signOut(); status(e.message || String(e), true); }
+async function cycleRepeat(){
+  const next = { off: "context", context: "track", track: "off" }[(np && np.repeat) || "off"];
+  try { await api("PUT", "me/player/repeat", { params: { ...deviceParam(), state: next } }); if (np) np.repeat = next; paintRepeat(next); } catch (e) { handleErr(e); }
+}
+function cycleShuffle(){ setMode({ true: "spotify", spotify: "off", off: "true" }[pref] || "true"); }
+
+// ================= lyrics (LRCLIB) =================
+let lyLines = null, lyFor = "", lyIdx = -1, userScrolledAt = 0;
+function showLyricsMsg(m){ lyLines = null; lyIdx = -1; $("lyBody").className = ""; $("lyBody").innerHTML = `<p class="msg">${esc(m)}</p>`; }
+function parseLrc(t){
+  const out = [];
+  t.split("\n").forEach(line => {
+    const tags = [...line.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)]; const text = line.replace(/\[[^\]]*\]/g, "").trim();
+    tags.forEach(m => out.push({ t: (Number(m[1]) * 60 + Number(m[2])) * 1000, text }));
+  });
+  return out.sort((a, b) => a.t - b.t);
+}
+async function fetchLyrics(item){
+  const track = item.name, artist = (item.artists && item.artists[0] && item.artists[0].name) || "", album = (item.album && item.album.name) || "", dur = Math.round((item.duration_ms || 0) / 1000);
+  try {
+    const r = await fetch("https://lrclib.net/api/get?" + new URLSearchParams({ track_name: track, artist_name: artist, album_name: album, duration: dur }));
+    if (r.ok) { const j = await r.json(); if (j.syncedLyrics || j.plainLyrics || j.instrumental) return j; }
+  } catch {}
+  const clean = track.replace(/\s*[-(\[].*(remaster|version|live|edit|mix|feat).*$/i, "");
+  const r2 = await fetch("https://lrclib.net/api/search?" + new URLSearchParams({ track_name: clean, artist_name: artist }));
+  if (!r2.ok) return null;
+  const list = (await r2.json()) || [];
+  const score = x => (x.syncedLyrics ? 0 : 1000) + Math.abs((x.duration || 0) - dur);
+  return list.filter(x => x.syncedLyrics || x.plainLyrics || x.instrumental).sort((a, b) => score(a) - score(b))[0] || null;
+}
+async function loadLyrics(item){
+  const key = item.id; lyFor = key; showLyricsMsg("Loading lyrics…");
+  let j = null; try { j = await fetchLyrics(item); } catch {}
+  if (lyFor !== key) return;
+  if (!j) return showLyricsMsg("No lyrics found for this song.");
+  if (j.instrumental && !j.syncedLyrics && !j.plainLyrics) return showLyricsMsg("Instrumental");
+  if (j.syncedLyrics){
+    lyLines = parseLrc(j.syncedLyrics).filter((l, i, a) => l.text || (a[i - 1] && a[i - 1].text));
+    $("lyBody").className = $("lyBody").classList.contains("tall") ? "tall" : "";
+    $("lyBody").innerHTML = lyLines.map((l, i) => `<p data-i="${i}">${esc(l.text || "♪")}</p>`).join("");
+    lyIdx = -1; paintProgress();
+  } else {
+    lyLines = null;
+    $("lyBody").className = "plain" + ($("lyBody").classList.contains("tall") ? " tall" : "");
+    $("lyBody").innerHTML = j.plainLyrics.split("\n").map(l => `<p>${esc(l) || "&nbsp;"}</p>`).join("");
+  }
+}
+function syncLyrics(pos){
+  if (!lyLines || !lyLines.length) return;
+  let i = -1; for (let k = 0; k < lyLines.length; k++){ if (lyLines[k].t <= pos + 250) i = k; else break; }
+  if (i === lyIdx) return; lyIdx = i;
+  const ps = $("lyBody").children;
+  for (let k = 0; k < ps.length; k++) ps[k].className = k === i ? "now" : k < i ? "past" : "";
+  if (i >= 0 && Date.now() - userScrolledAt > 4000){
+    const el = ps[i], box = $("lyBody");
+    box.scrollTop = el.offsetTop - box.offsetTop - box.clientHeight / 3;
+  }
+}
+$("lyBody").addEventListener("touchmove", () => userScrolledAt = Date.now(), { passive: true });
+$("lyBody").addEventListener("wheel", () => userScrolledAt = Date.now(), { passive: true });
+$("lyExpand").onclick = () => { const t = $("lyBody").classList.toggle("tall"); $("lyExpand").textContent = t ? "Collapse" : "Expand"; lyIdx = -1; paintProgress(); };
+
+// ================= proof =================
+let proofLoaded = false;
+async function loadProof(){
+  try {
+    const r = await api("GET", "me/player/recently-played", { params: { limit: 50 } });
+    const plays = (r.items || []).filter(p => p.track && p.track.uri);
+    proofLoaded = true;
+    if (!plays.length){ $("pUnique").textContent = "0"; $("pRepeats").textContent = "0"; return; }
+    const isMix = p => mixId && p.context && p.context.uri === `spotify:playlist:${mixId}`;
+    const rep = list => list.length - new Set(list.map(p => p.track.uri)).size;
+    $("pUnique").textContent = `${new Set(plays.map(p => p.track.uri)).size} of ${plays.length}`;
+    $("pRepeats").textContent = String(rep(plays));
+    const mix = plays.filter(isMix), other = plays.filter(p => !isMix(p));
+    const row = (name, list) => `<span>${name}</span><span>${list.length} plays</span><span>${list.length ? rep(list) + " repeats" : "–"}</span>`;
+    $("pCmp").innerHTML = `<span class="h">Source</span><span class="h">Plays</span><span class="h">Repeats</span>` + row("True Shuffle mix", mix) + row("Everything else", other);
+    const counts = {}; plays.forEach(p => { const a = (p.track.artists && p.track.artists[0] && p.track.artists[0].name) || "?"; counts[a] = (counts[a] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5), max = top.length ? top[0][1] : 1;
+    $("pArtists").innerHTML = top.map(([a, n]) => `<div class="abar"><span class="nm">${esc(a)}</span><span class="b" style="width:${Math.max(6, n / max * 140)}px"></span><span>${n}</span></div>`).join("");
+    const first = plays[plays.length - 1], hrs = (Date.now() - new Date(first.played_at)) / 36e5;
+    $("pCmp").insertAdjacentHTML("beforeend", `<span class="h" style="grid-column:1/-1">Covers about the last ${hrs < 1 ? Math.max(1, Math.round(hrs * 60)) + " minutes" : Math.round(hrs) + " hours"}.</span>`);
+  } catch (e) {
+    if (e.code === 403 || /scope/i.test(e.message)) { $("pRotation").textContent = "Sign in again to allow reading recently played songs."; return; }
+    handleErr(e);
+  }
+  const pool = Number(store.get("ts_pool") || 0), heard = Number(store.get("ts_heard") || 0);
+  if (pool){ const pct = Math.round(heard / pool * 100); $("pMeter").style.width = pct + "%";
+    $("pRotation").textContent = `${heard} of ${pool} songs in your last selection have been in a mix (${pct}%). ${Math.max(0, pool - heard)} still waiting their turn.`; }
+}
+$("proofRefresh").onclick = loadProof;
+setInterval(() => { if (playing && !document.hidden) paintProgress(); }, 250);
 
 // ---------- wiring ----------
 $("redir").textContent = REDIRECT;
@@ -525,17 +761,19 @@ $("refreshDev").onclick = loadDevices;
 $("device").onchange = transferIfNeeded;
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("pp").onclick = () => control("pp");
+$("shuf").onclick = cycleShuffle;
+$("rep").onclick = cycleRepeat;
 $("next").onclick = () => control("next");
 $("prev").onclick = () => control("prev");
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) { refreshNowPlaying(); loadDevices(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) { refreshNowPlaying(); loadDevices(); loadProof(); } });
 
 (async function start(){
   if (!store.get("ts_cid")) return show("setup");
   try { await handleRedirect(); } catch (e) { show("login"); return status(e.message, true); }
   if (!store.get("ts_refresh")) return show("login");
   // Older sign-ins lack the collaborative-playlist permission; ask once to sign in again.
-  if (store.get("ts_scope") === null || !/playlist-read-collaborative/.test(store.get("ts_scope") || "")) {
-    store.del("ts_refresh"); show("login"); return status("Sign in once more to allow playlist mixing.");
+  if (store.get("ts_scope") === null || !/user-read-recently-played/.test(store.get("ts_scope") || "")) {
+    store.del("ts_refresh"); show("login"); return status("Sign in once more to allow playlist mixing and play stats.");
   }
   show("app");
   paintModes(pref);
@@ -543,6 +781,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && !$
   try { await loadPlaylists(); } catch (e) { handleErr(e); }
   await loadDevices();
   await refreshNowPlaying();
+  loadProof();
   setInterval(refreshNowPlaying, 5000);
 })();
 </script>
