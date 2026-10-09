@@ -65,17 +65,16 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 .modebtn .tag{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .dev{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--accent)}
 
-/* desktop view */
+/* desktop view: symmetric 2 x 2 grid (player | panel, mix | proof) */
 body.desk main{max-width:1240px;padding:0 28px 32px}
-body.desk #app{display:grid;grid-template-columns:400px minmax(0,1fr);gap:28px;align-items:start}
-body.desk #player{margin:0;border-radius:16px;padding:0 24px 22px;position:sticky;top:12px}
-body.desk .art{margin-top:24px}
-body.desk #side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
-body.desk #side>.card{margin:0}
-body.desk #lyrics{grid-column:1/-1}
-body.desk #lyBody{max-height:340px}
-body.desk #lyBody.tall{max-height:60vh}
-body.desk #side>.hint{grid-column:1/-1}
+body.desk #app{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:stretch}
+body.desk #side{display:contents}
+body.desk #app .card,body.desk #player{margin:0;border-radius:16px}
+body.desk #player{padding:0 28px 22px;background:linear-gradient(180deg,var(--tint) 0%,#181818 100%)}
+body.desk .art{max-width:340px;margin:24px auto 20px}
+body.desk #panel{display:flex;flex-direction:column;min-height:0}
+body.desk .pbody{flex:1 1 0;min-height:0;max-height:none !important}
+body.desk #lyExpand{display:none}
 .viewbtn{font-size:13px;padding:6px 10px;min-height:32px;border-radius:16px;background:var(--card2)}
 /* device picker */
 .dev{background:none;border:none;padding:6px 0;min-height:0;cursor:pointer;color:var(--accent);font-size:13px}
@@ -106,12 +105,32 @@ body.desk #side>.hint{grid-column:1/-1}
 .chips button.on{background:#fff;color:#000;font-weight:600}
 .chips button.on .c{opacity:.55}
 .buildbtn{width:100%;margin-top:16px;background:#fff;color:#000;border:none;border-radius:999px;font-weight:700;font-size:16px;min-height:50px}
-/* lyrics */
-#lyrics{background:var(--tint);border:none;transition:background .6s}
-#lyrics .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-#lyrics .head b{font-size:16px}
-#lyBody{max-height:260px;overflow-y:auto;scroll-behavior:smooth;transition:max-height .3s}
+/* player footer */
+.pfoot{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.pfoot .tabs{display:flex;gap:4px}
+.pfoot .icon{color:rgba(255,255,255,.75);min-width:40px;min-height:40px;padding:6px}
+.pfoot .icon.on{color:var(--accent)}
+/* panel: lyrics / queue / recently played */
+#panel{background:var(--tint);border:none;color:#fff;transition:background .6s}
+.ptabs{display:flex;align-items:center;gap:18px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.15)}
+.ptabs button{background:none;border:none;border-radius:0;padding:6px 0 8px;min-height:0;font-weight:700;font-size:15px;color:rgba(255,255,255,.6);border-bottom:2px solid transparent;margin-bottom:-1px}
+.ptabs button.on{color:#fff;border-bottom-color:var(--accent)}
+.ptabs .spacer{flex:1}
+.ptabs .link{color:#fff;font-weight:400;font-size:13px}
+.pbody{max-height:340px;overflow-y:auto;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.35) transparent}
+.pbody::-webkit-scrollbar{width:6px}
+.pbody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.35);border-radius:3px}
+.pbody::-webkit-scrollbar-track{background:transparent}
 #lyBody.tall{max-height:70vh}
+.qsec{font-size:15px;font-weight:700;margin:4px 0 8px}
+.qrow{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;border-radius:8px;padding:6px;min-height:0;text-align:left;cursor:pointer;color:#fff}
+.qrow:hover{background:rgba(255,255,255,.08)}
+.qrow img,.qrow .ph{width:44px;height:44px;border-radius:4px;flex:none;object-fit:cover;background:rgba(255,255,255,.1)}
+.qrow .tx{flex:1;min-width:0}
+.qrow .t1{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .t2{font-size:13px;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow.now .t1{color:var(--accent)}
+.qrow .when{font-size:12px;color:rgba(255,255,255,.55);flex:none}
 #lyBody p{margin:0 0 10px;font-size:20px;font-weight:700;line-height:1.3;color:rgba(0,0,0,.55);transition:color .3s}
 #lyBody p.now{color:#fff}
 #lyBody p.past{color:rgba(255,255,255,.6)}
@@ -121,15 +140,15 @@ body.desk #side>.hint{grid-column:1/-1}
 
 /* proof */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.stat{background:var(--card2);border-radius:10px;padding:10px 12px}
+.stat{background:rgba(255,255,255,.08);border-radius:10px;padding:10px 12px}
 .stat .v{font-size:22px;font-weight:700}
-.stat .k{font-size:12px;color:var(--muted)}
+.stat .k{font-size:12px;color:rgba(255,255,255,.65)}
 .cmp{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;font-size:14px;margin:6px 0 10px}
-.cmp .h{font-size:12px;color:var(--muted)}
+.cmp .h{font-size:12px;color:rgba(255,255,255,.6)}
 .abar{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
 .abar .nm{width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .abar .b{height:8px;border-radius:4px;background:var(--accent)}
-.meter{height:8px;border-radius:4px;background:var(--card2);overflow:hidden;margin:6px 0 2px}
+.meter{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden;margin:6px 0 2px}
 .meter i{display:block;height:100%;background:var(--accent);width:0}
 </style>
 </head>
@@ -186,7 +205,13 @@ body.desk #side>.hint{grid-column:1/-1}
           <span class="tag" id="repTag"></span>
         </button>
       </div>
+      <div class="pfoot">
       <button class="dev" id="devBtn" aria-haspopup="true" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg><span id="devName">No device</span><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="tabs">
+          <button class="icon on" id="icoLyrics" aria-label="Show lyrics" title="Lyrics"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></button>
+          <button class="icon" id="icoQueue" aria-label="Show queue" title="Queue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M18 15v6l4-3z" fill="currentColor"/></svg></button>
+        </div>
+      </div>
       <div class="devsheet hidden" id="devSheet">
         <div class="dshead"><b>Play on</b><button class="link" id="refreshDev">Refresh</button></div>
         <div id="devList"><p class="dsnote">Looking for devices…</p></div>
@@ -196,10 +221,15 @@ body.desk #side>.hint{grid-column:1/-1}
     </div>
 
     <div id="side">
-    <div class="card" id="lyrics">
-      <div class="head"><b>Lyrics</b><button class="link" id="lyExpand" style="color:#fff">Expand</button></div>
-      <div id="lyBody"><p class="msg">Play a song to see lyrics.</p></div>
-      <div class="src">Lyrics from LRCLIB, a free community library. Some songs won't have them.</div>
+    <div class="card" id="panel">
+      <div class="ptabs">
+        <button data-tab="lyrics" class="on">Lyrics</button><button data-tab="queue">Queue</button><button data-tab="recent">Recently played</button>
+        <span class="spacer"></span><button class="link" id="lyExpand">Expand</button>
+      </div>
+      <div id="lyBody" class="pbody"><p class="msg">Play a song to see lyrics.</p></div>
+      <div id="qBody" class="pbody hidden"><p class="msg">Loading queue…</p></div>
+      <div id="rBody" class="pbody hidden"><p class="msg">Loading…</p></div>
+      <div class="src" id="lySrc">Lyrics from LRCLIB, a free community library. Some songs won't have them.</div>
     </div>
 
     <div class="card mixcard" id="mixCard">
@@ -216,19 +246,19 @@ body.desk #side>.hint{grid-column:1/-1}
       <p class="mnote" id="rotation"></p>
     </div>
 
-    <div class="card" id="proof">
-      <div class="row" style="align-items:center;margin-bottom:8px"><p class="label" style="margin:0">Proof it's working</p><button class="link" id="proofRefresh" style="flex:0 0 auto">Refresh</button></div>
+    <div class="card mixcard" id="proof">
+      <div class="row" style="align-items:center;margin-bottom:8px"><b style="font-size:16px">Proof it's working</b><button class="link" id="proofRefresh" style="flex:0 0 auto">Refresh</button></div>
       <div class="stats">
         <div class="stat"><div class="v" id="pUnique">–</div><div class="k">Unique songs in your last plays</div></div>
         <div class="stat"><div class="v" id="pRepeats">–</div><div class="k">Repeats in your last plays</div></div>
       </div>
       <div class="cmp" id="pCmp"></div>
-      <p class="label" style="margin-top:4px">Top artists in your last plays</p>
+      <p class="mlabel">Top artists in your last plays</p>
       <div id="pArtists"></div>
-      <p class="label" style="margin-top:12px">Rotation progress</p>
+      <p class="mlabel">Rotation progress</p>
       <div class="meter"><i id="pMeter"></i></div>
-      <p class="hint" id="pRotation" style="margin-top:4px">Build a mix to start the rotation.</p>
-      <p class="hint">Spotify shares your last 50 plays (songs played at least about 30 seconds). Nothing here is stored anywhere new.</p>
+      <p class="mnote" id="pRotation">Build a mix to start the rotation.</p>
+      <p class="mnote">Spotify shares your last 50 plays (songs played at least about 30 seconds). Nothing here is stored anywhere new.</p>
     </div>
 
     </div>
@@ -470,6 +500,8 @@ async function buildFrom(sourceIds, countSel){
     mixId = await findOrCreatePlaylist(MIX_NAME, "Real random shuffle. Rebuilt by True Shuffle.");
     store.set("ts_mix_id", mixId);
     await replacePlaylist(mixId, mixUris);
+    mixUrisCache = mixUris; store.del("ts_mix_last");
+    try { store.set("ts_mix_uris", JSON.stringify({ id: mixId, uris: mixUris })); } catch {}
 
     const inMix = new Set(mixUris);
     const newHist = mixUris.concat(history.filter(u => !inMix.has(u))).slice(0, HIST_MAX);
@@ -490,11 +522,14 @@ async function buildFrom(sourceIds, countSel){
 let devId = null;
 function deviceParam(){ return devId ? { device_id: devId } : {}; }
 
-async function playContext(contextUri, shuffle){
+async function playContext(contextUri, shuffle, offset, positionMs){
   const dev = deviceParam();
   // Set shuffle first so the very first song respects it, then start, then set it again (some clients reset it on a new context).
   try { await api("PUT", "me/player/shuffle", { params: { ...dev, state: String(shuffle) } }); } catch {}
-  await api("PUT", "me/player/play", { params: dev, body: shuffle ? { context_uri: contextUri } : { context_uri: contextUri, offset: { position: 0 } } });
+  const body = { context_uri: contextUri };
+  if (!shuffle) body.offset = offset || { position: 0 };
+  if (positionMs) body.position_ms = Math.max(0, Math.round(positionMs));
+  await api("PUT", "me/player/play", { params: dev, body });
   await sleep(700);
   await api("PUT", "me/player/shuffle", { params: { ...dev, state: String(shuffle) } });
   if (!shuffle) { try { await api("PUT", "me/player/repeat", { params: { ...dev, state: "off" } }); } catch {} }
@@ -504,23 +539,48 @@ async function playContext(contextUri, shuffle){
 function likedContext(){ return `spotify:user:${me.id}:collection`; }
 
 
-let pref = store.get("ts_mode") || "true";
+let pref = store.get("ts_mode") === "off" ? "off" : "true";
 function currentPref(){ return pref; }
 
+let modeLockUntil = 0, mixUrisCache = null;
+async function getMixUris(){
+  if (mixUrisCache) return mixUrisCache;
+  try { const saved = JSON.parse(store.get("ts_mix_uris") || "null"); if (saved && saved.id === mixId) return (mixUrisCache = saved.uris); } catch {}
+  mixUrisCache = await playlistUris(mixId);
+  try { store.set("ts_mix_uris", JSON.stringify({ id: mixId, uris: mixUrisCache })); } catch {}
+  return mixUrisCache;
+}
+
 async function setMode(mode){
+  if (mode !== "true") mode = "off";
   pref = mode; store.set("ts_mode", mode); paintModes(mode);
+  modeLockUntil = Date.now() + 6000;   // don't let a slow status poll flip the button back
   try {
+    me = me || await api("GET", "me");
+    const inMix = np && mixId && np.contextUri === `spotify:playlist:${mixId}`;
+    const pos = np ? livePos() : 0;
     if (mode === "true"){
       if (!mixId) { status("Build a mix first, below."); return; }
-      status("Starting your True Shuffle mix…");
-      await playContext(`spotify:playlist:${mixId}`, false);
-      status("Playing your True Shuffle mix in order.");
+      const uris = await getMixUris();
+      if (np && np.uri && uris.includes(np.uri)) {
+        await playContext(`spotify:playlist:${mixId}`, false, { uri: np.uri }, pos);        // same song keeps playing, now inside the mix
+      } else {
+        const last = store.get("ts_mix_last"), idx = last ? uris.indexOf(last) : -1;
+        await playContext(`spotify:playlist:${mixId}`, false, { position: Math.min(Math.max(idx + 1, 0), Math.max(uris.length - 1, 0)) });
+      }
+      status("True Shuffle on. Picking up your mix where you left off.");
     } else {
-      await api("PUT", "me/player/shuffle", { params: { ...deviceParam(), state: mode === "spotify" ? "true" : "false" } });
-      status(mode === "spotify" ? "Spotify shuffle is on." : "Shuffle is off.");
+      if (inMix && np && np.uri) {
+        try { await playContext(likedContext(), false, { uri: np.uri }, pos); }           // continue this song, then Liked Songs in order
+        catch { await playContext(likedContext(), false); }
+        status("True Shuffle off. Playing Liked Songs in order.");
+      } else {
+        await api("PUT", "me/player/shuffle", { params: { ...deviceParam(), state: "false" } });
+        status("Shuffle off. Playing in order.");
+      }
     }
-    setTimeout(refreshNowPlaying, 800);
-  } catch (e) { handleErr(e); }
+    setTimeout(refreshNowPlaying, 1200);
+  } catch (e) { modeLockUntil = 0; handleErr(e); }
 }
 
 const DEV_ICON = { Computer: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/>', Smartphone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>', Speaker: '<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="6.5" r="1"/>' };
@@ -588,8 +648,8 @@ $("bar").addEventListener("pointerup", async () => {
 
 function paintModes(mode){
   document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
-  $("shuf").classList.toggle("on", mode !== "off");
-  $("shufTag").textContent = mode === "true" ? "TRUE" : mode === "spotify" ? "SPOTIFY" : "";
+  $("shuf").classList.toggle("on", mode === "true");
+  $("shufTag").textContent = mode === "true" ? "TRUE" : "";
 }
 function paintRepeat(r){ $("rep").classList.toggle("on", r && r !== "off"); $("repTag").textContent = r === "track" ? "1" : ""; }
 
@@ -626,7 +686,7 @@ async function refreshNowPlaying(){
     $("pp").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
     if (!item){ np = null; $("title").textContent = "Nothing playing"; $("artist").textContent = "Open Spotify on a device"; $("devName").textContent = (s && s.device && s.device.name) || "No device"; paintProgress(); showLyricsMsg("Play a song to see lyrics."); return; }
     const changed = !np || np.id !== item.id;
-    np = { id: item.id, name: item.name, artists: (item.artists || []).map(a => a.name), album: item.album && item.album.name,
+    np = { id: item.id, uri: item.uri, name: item.name, artists: (item.artists || []).map(a => a.name), album: item.album && item.album.name,
       durationMs: item.duration_ms || 0, progressMs: s.progress_ms || 0, at: Date.now(),
       contextUri: s.context && s.context.uri, shuffle: s.shuffle_state, repeat: s.repeat_state, smart: s.smart_shuffle };
     $("title").textContent = np.name;
@@ -636,12 +696,13 @@ async function refreshNowPlaying(){
     if (img && img.url !== lastArtUrl){ lastArtUrl = img.url; $("art").src = img.url; }
     $("ctxName").textContent = (await contextName(np.contextUri)) || "True Shuffle";
 
-    let mode = "off";
-    if (np.contextUri && mixId && np.contextUri === `spotify:playlist:${mixId}` && !np.shuffle) mode = "true";
-    else if (np.shuffle) mode = "spotify";
-    pref = mode; paintModes(mode); paintRepeat(np.repeat);
-    $("modeHint").textContent = np.smart ? "Smart Shuffle is on. Turn it off in the Spotify app so True Shuffle plays in order." : "";
-    if (changed) { loadLyrics(item); if (proofLoaded) setTimeout(loadProof, 4000); }
+    const inMix = !!(np.contextUri && mixId && np.contextUri === `spotify:playlist:${mixId}`);
+    if (inMix) store.set("ts_mix_last", np.uri);
+    if (Date.now() > modeLockUntil) { pref = inMix ? "true" : "off"; paintModes(pref); }
+    paintRepeat(np.repeat);
+    $("modeHint").textContent = np.smart ? "Smart Shuffle is on. Turn it off in the Spotify app so True Shuffle plays in order."
+      : np.shuffle ? "Spotify's shuffle is on in the app. Tap the shuffle button here to go back to True Shuffle or play in order." : "";
+    if (changed) { loadLyrics(item); if (proofLoaded) setTimeout(loadProof, 4000); if (activeTab === "queue") setTimeout(loadQueue, 600); }
     paintProgress();
   } catch (e) { if (e.signedOut) signOut(); }
 }
@@ -667,11 +728,11 @@ async function cycleRepeat(){
   const next = { off: "context", context: "track", track: "off" }[(np && np.repeat) || "off"];
   try { await api("PUT", "me/player/repeat", { params: { ...deviceParam(), state: next } }); if (np) np.repeat = next; paintRepeat(next); } catch (e) { handleErr(e); }
 }
-function cycleShuffle(){ setMode({ true: "spotify", spotify: "off", off: "true" }[pref] || "true"); }
+function cycleShuffle(){ setMode(pref === "true" ? "off" : "true"); }
 
 // ================= lyrics (LRCLIB) =================
 let lyLines = null, lyFor = "", lyIdx = -1, userScrolledAt = 0;
-function showLyricsMsg(m){ lyLines = null; lyIdx = -1; $("lyBody").className = ""; $("lyBody").innerHTML = `<p class="msg">${esc(m)}</p>`; }
+function showLyricsMsg(m){ lyLines = null; lyIdx = -1; $("lyBody").classList.remove("plain"); $("lyBody").innerHTML = `<p class="msg">${esc(m)}</p>`; }
 function parseLrc(t){
   const out = [];
   t.split("\n").forEach(line => {
@@ -712,12 +773,12 @@ async function loadLyrics(item){
   if (j.instrumental && !j.syncedLyrics && !j.plainLyrics) return showLyricsMsg("Instrumental");
   if (j.syncedLyrics){
     lyLines = parseLrc(j.syncedLyrics).filter((l, i, a) => l.text || (a[i - 1] && a[i - 1].text));
-    $("lyBody").className = $("lyBody").classList.contains("tall") ? "tall" : "";
+    $("lyBody").classList.remove("plain");
     $("lyBody").innerHTML = lyLines.map((l, i) => `<p data-i="${i}">${esc(l.text || "♪")}</p>`).join("");
     lyIdx = -1; paintProgress();
   } else {
     lyLines = null;
-    $("lyBody").className = "plain" + ($("lyBody").classList.contains("tall") ? " tall" : "");
+    $("lyBody").classList.add("plain");
     $("lyBody").innerHTML = j.plainLyrics.split("\n").map(l => `<p>${esc(l) || "&nbsp;"}</p>`).join("");
   }
 }
@@ -736,13 +797,55 @@ $("lyBody").addEventListener("touchmove", () => userScrolledAt = Date.now(), { p
 $("lyBody").addEventListener("wheel", () => userScrolledAt = Date.now(), { passive: true });
 $("lyExpand").onclick = () => { const t = $("lyBody").classList.toggle("tall"); $("lyExpand").textContent = t ? "Collapse" : "Expand"; lyIdx = -1; paintProgress(); };
 
+// ================= panel tabs: lyrics / queue / recently played =================
+let activeTab = "lyrics", recentPlays = [];
+function setTab(t){
+  activeTab = t;
+  document.querySelectorAll(".ptabs [data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  $("lyBody").classList.toggle("hidden", t !== "lyrics"); $("lySrc").classList.toggle("hidden", t !== "lyrics");
+  $("qBody").classList.toggle("hidden", t !== "queue"); $("rBody").classList.toggle("hidden", t !== "recent");
+  $("lyExpand").classList.toggle("hidden", t !== "lyrics");
+  $("icoLyrics").classList.toggle("on", t === "lyrics"); $("icoQueue").classList.toggle("on", t === "queue");
+  if (t === "queue") loadQueue();
+  if (t === "recent") renderRecent();
+  if (t === "lyrics") { lyIdx = -1; paintProgress(); }
+}
+document.querySelectorAll(".ptabs [data-tab]").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+const smallArt = t => { const im = t && t.album && t.album.images; return im && im.length ? im[im.length - 1].url : ""; };
+const qRow = (t, extra = "", cls = "", idx = "") => `<button class="qrow ${cls}" ${idx !== "" ? `data-uri="${esc(t.uri)}"` : ""}>${smallArt(t) ? `<img src="${esc(smallArt(t))}" alt="">` : '<span class="ph"></span>'}<span class="tx"><span class="t1" style="display:block">${esc(t.name)}</span><span class="t2" style="display:block">${esc((t.artists || (t.show ? [t.show] : [])).map(a => a.name).join(", "))}</span></span>${extra}</button>`;
+
+async function loadQueue(){
+  try {
+    const q = await api("GET", "me/player/queue");
+    const cur = q.currently_playing, next = (q.queue || []).slice(0, 30);
+    const ctx = $("ctxName").textContent || "this playlist";
+    $("qBody").innerHTML = !cur ? '<p class="msg">Nothing playing.</p>'
+      : `<p class="qsec">Now playing</p>${qRow(cur, "", "now")}<p class="qsec" style="margin-top:14px">Next from: ${esc(ctx)}</p>` +
+        (next.length ? next.map(t => qRow(t, "", "", "1")).join("") : '<p class="msg">Nothing queued.</p>');
+    $("qBody").querySelectorAll(".qrow[data-uri]").forEach(b => b.onclick = () => jumpTo(b.dataset.uri));
+  } catch (e) { $("qBody").innerHTML = `<p class="msg">${esc(e.message)}</p>`; }
+}
+
+async function jumpTo(uri){
+  if (!np || !np.contextUri || !/:(playlist|album):|:collection$/.test(np.contextUri)) { status("Spotify only lets this jump within a playlist or album.", true); return; }
+  try { modeLockUntil = Date.now() + 3000; await playContext(np.contextUri, false, { uri }); setTimeout(loadQueue, 1200); }
+  catch (e) { handleErr(e); }
+}
+
+function ago(iso){ const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "now" : m < 60 ? m + "m ago" : Math.round(m / 60) + "h ago"; }
+function renderRecent(){
+  $("rBody").innerHTML = recentPlays.length ? recentPlays.map(p => qRow(p.track, `<span class="when">${ago(p.played_at)}</span>`)).join("")
+    : '<p class="msg">No recent plays yet.</p>';
+}
+
 // ================= proof =================
 let proofLoaded = false;
 async function loadProof(){
   try {
     const r = await api("GET", "me/player/recently-played", { params: { limit: 50 } });
     const plays = (r.items || []).filter(p => p.track && p.track.uri);
-    proofLoaded = true;
+    proofLoaded = true; recentPlays = plays; if (activeTab === "recent") renderRecent();
     if (!plays.length){ $("pUnique").textContent = "0"; $("pRepeats").textContent = "0"; return; }
     const isMix = p => mixId && p.context && p.context.uri === `spotify:playlist:${mixId}`;
     const rep = list => list.length - new Set(list.map(p => p.track.uri)).size;
@@ -794,6 +897,8 @@ document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMod
 $("pp").onclick = () => control("pp");
 $("shuf").onclick = cycleShuffle;
 $("rep").onclick = cycleRepeat;
+$("icoLyrics").onclick = () => setTab("lyrics");
+$("icoQueue").onclick = () => setTab(activeTab === "queue" ? "lyrics" : "queue");
 $("next").onclick = () => control("next");
 $("prev").onclick = () => control("prev");
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) { refreshNowPlaying(); loadDevices(); loadProof(); } });
