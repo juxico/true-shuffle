@@ -42,6 +42,13 @@ select,input{width:100%;background:var(--card2);border:1px solid var(--border);b
 #status.err{color:var(--danger)}
 code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;word-break:break-all}
 .hidden{display:none}
+.list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--card2)}
+.list label{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;min-height:44px}
+.list label:last-child{border-bottom:none}
+.list input{width:20px;height:20px;min-height:0;flex:none;accent-color:var(--accent)}
+.list .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list .c{font-size:13px;color:var(--muted);flex:none}
+.links{display:flex;gap:4px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -49,7 +56,6 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
   <h1>True Shuffle <button class="link hidden" id="signout">Sign out</button></h1>
   <p id="status"></p>
 
-  <!-- Setup: first visit only -->
   <section id="setup" class="hidden">
     <div class="card">
       <p class="label">One-time setup</p>
@@ -60,7 +66,6 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
     </div>
   </section>
 
-  <!-- Sign in -->
   <section id="login" class="hidden">
     <div class="card">
       <p style="margin:0 0 12px">Sign in to Spotify to build mixes and control playback.</p>
@@ -69,9 +74,7 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
     </div>
   </section>
 
-  <!-- Remote -->
   <section id="app" class="hidden">
-
     <div class="card">
       <div class="np">
         <img id="art" class="hidden" alt="">
@@ -99,17 +102,31 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
     </div>
 
     <div class="card">
-      <p class="label">Mix</p>
-      <div class="row" style="margin-bottom:10px">
+      <p class="label">Mix from</p>
+      <div class="list" id="sources"><label><span class="n">Loading your playlists…</span></label></div>
+      <div class="links"><button class="link" id="selAll">Select all</button><button class="link" id="selNone">Clear</button><button class="link" id="reloadLists">Reload</button></div>
+      <p class="hint" id="srcSummary"></p>
+      <div class="row" style="margin:10px 0">
         <select id="count" aria-label="Mix size">
           <option value="50">50 songs</option>
           <option value="100">100 songs</option>
           <option value="150" selected>150 songs</option>
           <option value="300">300 songs</option>
+          <option value="500">500 songs</option>
+          <option value="all">Everything selected</option>
         </select>
       </div>
       <button class="primary" id="build">Build new mix and play</button>
       <p class="hint" id="rotation"></p>
+    </div>
+
+    <div class="card">
+      <p class="label">Play a playlist as-is</p>
+      <div class="row">
+        <select id="playlistPick" aria-label="Playlist"><option value="">Loading…</option></select>
+        <button id="playPick" style="flex:0 0 72px">Play</button>
+      </div>
+      <p class="hint">Uses the Spotify shuffle or Off setting above. Playlists marked "play only" are ones you follow. Spotify doesn't let outside apps read their songs, so they can't be true-shuffled. To mix one, copy its songs into a playlist of your own in the Spotify app.</p>
     </div>
 
     <div class="card">
@@ -127,24 +144,25 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 
 <script>
 "use strict";
-const SCOPES = "user-library-read playlist-read-private playlist-modify-private playlist-modify-public user-read-playback-state user-modify-playback-state user-read-currently-playing";
+const SCOPES = "user-library-read playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-read-playback-state user-modify-playback-state user-read-currently-playing";
 const MIX_NAME = "True Shuffle";
 const HIST_NAME = "True Shuffle · history";
-const HIST_MAX = 3000;          // songs remembered as "recently heard"
+const HIST_MAX = 3000;
+const LIKED = "__liked__";
 const API = "https://api.spotify.com/v1";
 const REDIRECT = location.origin + location.pathname;
 const $ = id => document.getElementById(id);
 
-// ---------- storage (wrapped: private mode can throw) ----------
 const store = {
   get(k){ try { return localStorage.getItem(k); } catch { return null; } },
   set(k,v){ try { localStorage.setItem(k,v); } catch {} },
   del(k){ try { localStorage.removeItem(k); } catch {} }
 };
 
-// ---------- UI helpers ----------
 function show(section){ ["setup","login","app"].forEach(s => $(s).classList.toggle("hidden", s !== section)); $("signout").classList.toggle("hidden", section !== "app"); }
 function status(msg, err=false){ $("status").textContent = msg || ""; $("status").classList.toggle("err", !!err); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 
 // ---------- PKCE auth ----------
 function rand(n){ const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"[b % 66]).join(""); }
@@ -162,10 +180,11 @@ async function tokenRequest(body){
   const r = await fetch("https://accounts.spotify.com/api/token", { method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(body) });
   const j = await r.json();
-  if (!r.ok) throw new Error(j.error_description || j.error || "Sign-in failed");
+  if (!r.ok) throw Object.assign(new Error(j.error_description || j.error || "Sign-in failed"), { signedOut: j.error === "invalid_grant" });
   store.set("ts_access", j.access_token);
   store.set("ts_expires", String(Date.now() + (j.expires_in - 60) * 1000));
   if (j.refresh_token) store.set("ts_refresh", j.refresh_token);
+  if (j.scope) store.set("ts_scope", j.scope);
 }
 
 async function handleRedirect(){
@@ -179,17 +198,28 @@ async function handleRedirect(){
   store.del("ts_verifier"); store.del("ts_state");
 }
 
+let refreshing = null;
 async function accessToken(){
   if (Date.now() < Number(store.get("ts_expires") || 0)) return store.get("ts_access");
   const refresh = store.get("ts_refresh");
   if (!refresh) throw Object.assign(new Error("Signed out"), { signedOut: true });
-  await tokenRequest({ grant_type: "refresh_token", refresh_token: refresh, client_id: store.get("ts_cid") });
+  refreshing = refreshing || tokenRequest({ grant_type: "refresh_token", refresh_token: refresh, client_id: store.get("ts_cid") }).finally(() => { refreshing = null; });
+  await refreshing;
   return store.get("ts_access");
 }
 
 function signOut(){ ["ts_access","ts_expires","ts_refresh"].forEach(store.del); show("login"); }
 
 // ---------- API ----------
+// Spotify's player endpoints reply 200 with a plain-text id, not JSON. Never assume JSON.
+function friendly(msg, code){
+  if (/NO_ACTIVE_DEVICE|No active device/i.test(msg)) return "No active device. Open Spotify on your phone or PC, then tap refresh.";
+  if (/PREMIUM_REQUIRED/i.test(msg)) return "Playback control needs Spotify Premium.";
+  if (/Restriction violated/i.test(msg)) return "Spotify blocked that right now (for example, it's already paused, or there's nothing to go back to).";
+  if (code === 403) return "Spotify didn't allow that (403).";
+  return msg || ("Request failed (" + code + ")");
+}
+
 async function api(method, path, { params, body, okMissing } = {}){
   const url = new URL(path.startsWith("http") ? path : API + "/" + path.replace(/^\//, ""));
   if (params) Object.entries(params).forEach(([k,v]) => v !== undefined && v !== "" && url.searchParams.set(k, v));
@@ -198,43 +228,92 @@ async function api(method, path, { params, body, okMissing } = {}){
       ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
     if (r.status === 429){ await sleep((Number(r.headers.get("Retry-After")) || 2) * 1000 + 500); continue; }
     if (r.status >= 500 && attempt < 4){ await sleep(1000 * 2 ** attempt); continue; }
-    if (r.status === 401){ store.del("ts_expires"); continue; }
+    if (r.status === 401 && attempt < 1){ store.del("ts_expires"); continue; }
     if (okMissing && r.status === 404) return null;
-    if (r.status === 204 || r.status === 202) return {};
     const text = await r.text();
-    if (!r.ok){
-      let msg = text; try { msg = JSON.parse(text).error.message; } catch {}
-      if (/NO_ACTIVE_DEVICE|No active device/i.test(msg)) msg = "No active device. Open Spotify on your phone or PC, then tap refresh.";
-      if (/PREMIUM_REQUIRED/i.test(msg)) msg = "Playback control needs Spotify Premium.";
-      throw new Error(msg || ("Request failed (" + r.status + ")"));
-    }
-    return text ? JSON.parse(text) : {};
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+    if (!r.ok) throw Object.assign(new Error(friendly((data.error && (data.error.reason || data.error.message)) || text, r.status)), { code: r.status });
+    return data;
   }
   throw new Error("Spotify is busy. Try again in a minute.");
 }
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function pageAll(path, limit, onProgress){
   const first = await api("GET", path, { params: { limit, offset: 0 } });
-  const out = [...first.items];
+  const out = [...(first.items || [])];
   const total = first.total || out.length;
   const offsets = []; for (let o = limit; o < total; o += limit) offsets.push(o);
-  for (let i = 0; i < offsets.length; i += 4){   // 4 pages at a time
+  for (let i = 0; i < offsets.length; i += 4){
     const pages = await Promise.all(offsets.slice(i, i + 4).map(o => api("GET", path, { params: { limit, offset: o } })));
-    pages.forEach(p => out.push(...p.items));
+    pages.forEach(p => out.push(...(p.items || [])));
     onProgress && onProgress(out.length, total);
   }
-  return out;
+  return out.filter(Boolean);
 }
 
-let me = null;
+// ---------- playlists ----------
+let me = null, playlists = [];
+const songCount = p => ((p.items || p.tracks || {}).total) || 0;
+
+async function loadPlaylists(){
+  me = me || await api("GET", "me");
+  const all = await pageAll("me/playlists", 50);
+  playlists = all.filter(p => p.name !== HIST_NAME && p.name !== MIX_NAME)
+    .map(p => ({ id: p.id, name: p.name || "(untitled)", count: songCount(p),
+      mixable: (p.owner && p.owner.id === me.id) || p.collaborative }));
+  const mix = all.find(p => p.name === MIX_NAME && p.owner && p.owner.id === me.id);
+  if (mix) { mixId = mix.id; store.set("ts_mix_id", mixId); }
+  renderSources(); renderPick();
+}
+
+function savedSel(){ try { return JSON.parse(store.get("ts_sources") || "null"); } catch { return null; } }
+
+function renderSources(){
+  const sel = new Set(savedSel() || [LIKED]);
+  const rows = [{ id: LIKED, name: "Liked Songs", count: null, mixable: true }].concat(playlists.filter(p => p.mixable));
+  $("sources").innerHTML = rows.map(p =>
+    `<label><input type="checkbox" value="${esc(p.id)}" ${sel.has(p.id) ? "checked" : ""}><span class="n">${esc(p.name)}</span><span class="c">${p.count == null ? "" : p.count}</span></label>`).join("");
+  $("sources").querySelectorAll("input").forEach(i => i.onchange = saveSources);
+  summarize();
+}
+
+function selectedSources(){ return [...$("sources").querySelectorAll("input:checked")].map(i => i.value); }
+function saveSources(){ store.set("ts_sources", JSON.stringify(selectedSources())); summarize(); }
+function summarize(){
+  const ids = selectedSources();
+  const n = ids.filter(id => id !== LIKED).reduce((a, id) => a + ((playlists.find(p => p.id === id) || {}).count || 0), 0);
+  $("srcSummary").textContent = !ids.length ? "Pick at least one source."
+    : `${ids.length} selected${ids.includes(LIKED) ? " (Liked Songs plus" : " ("}${n ? " about " + n + " playlist songs)" : " no playlists)"}. Duplicates are removed.`;
+}
+
+function renderPick(){
+  const own = playlists.filter(p => p.mixable), followed = playlists.filter(p => !p.mixable);
+  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${p.mixable ? "" : " (play only)"}</option>`;
+  $("playlistPick").innerHTML = `<option value="${LIKED}">Liked Songs</option>` +
+    (own.length ? `<optgroup label="Your playlists">${own.map(opt).join("")}</optgroup>` : "") +
+    (followed.length ? `<optgroup label="Followed (play only)">${followed.map(opt).join("")}</optgroup>` : "");
+  const last = store.get("ts_pick"); if (last && [...$("playlistPick").options].some(o => o.value === last)) $("playlistPick").value = last;
+}
+
 async function findOrCreatePlaylist(name, description){
   me = me || await api("GET", "me");
   const lists = await pageAll("me/playlists", 50);
-  const hit = lists.find(p => p && p.name === name && p.owner && p.owner.id === me.id);
+  const hit = lists.find(p => p.name === name && p.owner && p.owner.id === me.id);
   if (hit) return hit.id;
-  const created = await api("POST", "me/playlists", { body: { name, public: false, description } });
-  return created.id;
+  return (await api("POST", "me/playlists", { body: { name, public: false, description } })).id;
+}
+
+const asTrack = t => t && t.uri && t.uri.startsWith("spotify:track:") && !t.is_local && t.is_playable !== false
+  ? { uri: t.uri, artist: (t.artists && t.artists[0] && t.artists[0].name) || "?" } : null;
+
+async function readSource(id, onProgress){
+  if (id === LIKED){
+    const saved = await pageAll("me/tracks", 50, onProgress);
+    return saved.map(s => asTrack(s.track || s.item)).filter(Boolean);
+  }
+  const items = await pageAll(`playlists/${id}/items`, 50, onProgress);
+  return items.map(it => asTrack(it.item || it.track)).filter(Boolean);
 }
 
 async function playlistUris(id){
@@ -271,61 +350,96 @@ function spreadArtists(tracks, gap = 3){
 
 // ---------- actions ----------
 let mixId = store.get("ts_mix_id");
+let busy = false;
 
-async function buildAndPlay(){
-  const btn = $("build"); btn.disabled = true;
+async function buildFrom(sourceIds, countSel){
+  if (busy) return; busy = true; $("build").disabled = true; $("playPick").disabled = true;
   try {
-    const count = Number($("count").value);
-    status("Reading your Liked Songs…");
-    const saved = await pageAll("me/tracks", 50, (n, t) => status(`Reading your Liked Songs… ${n} of ${t}`));
-    const tracks = saved.map(s => s.track || s.item).filter(t => t && t.uri && !t.is_local && t.is_playable !== false)
-      .map(t => ({ uri: t.uri, artist: (t.artists && t.artists[0] && t.artists[0].name) || "?" }));
-    if (!tracks.length) throw new Error("No playable Liked Songs found.");
+    if (!sourceIds.length) throw new Error("Pick at least one playlist or Liked Songs to mix from.");
+    const seen = new Set(), tracks = [];
+    for (const id of sourceIds){
+      const name = id === LIKED ? "Liked Songs" : ((playlists.find(p => p.id === id) || {}).name || "playlist");
+      status(`Reading ${name}…`);
+      let list;
+      try { list = await readSource(id, (n, t) => status(`Reading ${name}… ${n} of ${t}`)); }
+      catch (e) { if (e.code === 403) { status(`Skipped ${name}: Spotify won't share its songs.`, true); await sleep(1500); continue; } throw e; }
+      list.forEach(t => { if (!seen.has(t.uri)) { seen.add(t.uri); tracks.push(t); } });
+    }
+    if (!tracks.length) throw new Error("No playable songs found in what you picked.");
 
     status("Checking what you've heard recently…");
     const histId = await findOrCreatePlaylist(HIST_NAME, "Used by True Shuffle to avoid repeats. Don't edit.");
     const history = await playlistUris(histId);
 
+    const count = countSel === "all" ? tracks.length : Math.min(Number(countSel), tracks.length);
     const mix = buildMix(tracks, history, count);
     const mixUris = mix.map(t => t.uri);
 
-    status("Writing your mix…");
-    mixId = await findOrCreatePlaylist(MIX_NAME, "Real random shuffle of Liked Songs. Rebuilt by True Shuffle.");
+    status(`Writing your ${mix.length}-song mix…`);
+    mixId = await findOrCreatePlaylist(MIX_NAME, "Real random shuffle. Rebuilt by True Shuffle.");
     store.set("ts_mix_id", mixId);
     await replacePlaylist(mixId, mixUris);
 
     const inMix = new Set(mixUris);
-    const cap = Math.min(HIST_MAX, tracks.length);
-    const newHist = mixUris.concat(history.filter(u => !inMix.has(u))).slice(0, cap);
+    const newHist = mixUris.concat(history.filter(u => !inMix.has(u))).slice(0, HIST_MAX);
     await replacePlaylist(histId, newHist);
 
-    const liked = new Set(tracks.map(t => t.uri));
-    const heard = newHist.filter(u => liked.has(u)).length;
-    $("rotation").textContent = `Rotation: ${heard} of ${tracks.length} liked songs heard recently.`;
+    const heard = tracks.filter(t => new Set(newHist).has(t.uri)).length;
+    $("rotation").textContent = `Rotation: ${heard} of ${tracks.length} songs in this selection heard recently.`;
     store.set("ts_rotation", $("rotation").textContent);
 
-    await playMix();
+    await playContext(`spotify:playlist:${mixId}`, false);
     status(`New ${mix.length}-song mix is playing.`);
   } catch (e) { handleErr(e); }
-  finally { btn.disabled = false; }
+  finally { busy = false; $("build").disabled = false; $("playPick").disabled = false; }
 }
 
 function deviceParam(){ const d = $("device").value; return d ? { device_id: d } : {}; }
 
-async function playMix(){
-  if (!mixId) mixId = await findOrCreatePlaylist(MIX_NAME, "Real random shuffle of Liked Songs. Rebuilt by True Shuffle.");
+async function playContext(contextUri, shuffle){
   const dev = deviceParam();
-  await api("PUT", "me/player/play", { params: dev, body: { context_uri: `spotify:playlist:${mixId}`, offset: { position: 0 } } });
-  await sleep(800);
-  await api("PUT", "me/player/shuffle", { params: { ...dev, state: "false" } });
-  await api("PUT", "me/player/repeat", { params: { ...dev, state: "off" } });
-  setTimeout(refreshNowPlaying, 1200);
+  // Set shuffle first so the very first song respects it, then start, then set it again (some clients reset it on a new context).
+  try { await api("PUT", "me/player/shuffle", { params: { ...dev, state: String(shuffle) } }); } catch {}
+  await api("PUT", "me/player/play", { params: dev, body: shuffle ? { context_uri: contextUri } : { context_uri: contextUri, offset: { position: 0 } } });
+  await sleep(700);
+  await api("PUT", "me/player/shuffle", { params: { ...dev, state: String(shuffle) } });
+  if (!shuffle) { try { await api("PUT", "me/player/repeat", { params: { ...dev, state: "off" } }); } catch {} }
+  setTimeout(refreshNowPlaying, 1000);
 }
 
-async function setMode(mode){
+function likedContext(){ return `spotify:user:${me.id}:collection`; }
+
+async function playPicked(){
+  const id = $("playlistPick").value; store.set("ts_pick", id);
+  const mode = currentPref();
   try {
-    if (mode === "true"){ status("Starting your True Shuffle mix…"); await playMix(); status("Playing your True Shuffle mix in order."); }
-    else {
+    me = me || await api("GET", "me");
+    const p = playlists.find(x => x.id === id);
+    if (mode === "true"){
+      if (id !== LIKED && p && !p.mixable){
+        status("That's a followed playlist, so it can't be true-shuffled. Playing it with Spotify shuffle instead.");
+        await playContext(`spotify:playlist:${id}`, true); return;
+      }
+      return buildFrom([id], $("count").value);
+    }
+    const uri = id === LIKED ? likedContext() : `spotify:playlist:${id}`;
+    await playContext(uri, mode === "spotify");
+    status(`Playing ${id === LIKED ? "Liked Songs" : p ? p.name : "playlist"}${mode === "spotify" ? " with Spotify shuffle" : " in order"}.`);
+  } catch (e) { handleErr(e); }
+}
+
+let pref = store.get("ts_mode") || "true";
+function currentPref(){ return pref; }
+
+async function setMode(mode){
+  pref = mode; store.set("ts_mode", mode); paintModes(mode);
+  try {
+    if (mode === "true"){
+      if (!mixId) { status("Build a mix first, below."); return; }
+      status("Starting your True Shuffle mix…");
+      await playContext(`spotify:playlist:${mixId}`, false);
+      status("Playing your True Shuffle mix in order.");
+    } else {
       await api("PUT", "me/player/shuffle", { params: { ...deviceParam(), state: mode === "spotify" ? "true" : "false" } });
       status(mode === "spotify" ? "Spotify shuffle is on." : "Shuffle is off.");
     }
@@ -346,59 +460,87 @@ async function loadDevices(){
 
 async function transferIfNeeded(){
   const id = $("device").value; if (!id) return;
-  try { await api("PUT", "me/player", { body: { device_ids: [id], play: false } }); } catch (e) { handleErr(e); }
+  try { await api("PUT", "me/player", { body: { device_ids: [id], play: playing } }); status("Switched device."); } catch (e) { handleErr(e); }
 }
 
 let playing = false;
+function paintModes(mode){
+  document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
+}
+
 async function refreshNowPlaying(){
   if (document.hidden) return;
   try {
     const s = await api("GET", "me/player", { okMissing: true });
-    const item = s && (s.item || null);
+    const item = s && s.item;
     playing = !!(s && s.is_playing);
     $("pp").innerHTML = playing ? "&#10074;&#10074;" : "&#9654;&#xFE0E;";
     $("title").textContent = item ? item.name : "Nothing playing";
     $("artist").textContent = item ? (item.artists || []).map(a => a.name).join(", ") : "Open Spotify on a device";
     const img = item && item.album && item.album.images && item.album.images[0];
     $("art").classList.toggle("hidden", !img); $("artPh").classList.toggle("hidden", !!img);
-    if (img) $("art").src = img.url;
+    if (img && $("art").src !== img.url) $("art").src = img.url;
 
     let mode = "off";
     if (s && s.context && mixId && s.context.uri === `spotify:playlist:${mixId}` && !s.shuffle_state) mode = "true";
     else if (s && s.shuffle_state) mode = "spotify";
-    document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", !!s && b.dataset.mode === mode));
+    if (s) { pref = mode; paintModes(mode); }
     $("modeHint").textContent = !s ? "Start playing something to switch modes."
       : s.smart_shuffle ? "Smart Shuffle is on. Turn it off in the Spotify app for True shuffle."
-      : { true: "Playing your mix in order. No repeats until your whole library has played.",
+      : { true: "Playing your mix in order. No repeats until everything you picked has played.",
           spotify: "Spotify's own shuffle. Expect repeats.", off: "Playing in order." }[mode];
   } catch (e) { if (e.signedOut) signOut(); }
+}
+
+async function control(kind){
+  try {
+    const dev = deviceParam();
+    if (kind === "pp"){
+      const s = await api("GET", "me/player", { okMissing: true });   // fresh state, so we never "play" while already playing
+      const isPlaying = !!(s && s.is_playing);
+      await api("PUT", isPlaying ? "me/player/pause" : "me/player/play", { params: dev });
+    } else {
+      await api("POST", kind === "next" ? "me/player/next" : "me/player/previous", { params: dev });
+    }
+    status("");
+    setTimeout(refreshNowPlaying, 700);
+  } catch (e) { handleErr(e); }
 }
 
 function handleErr(e){ if (e.signedOut) return signOut(); status(e.message || String(e), true); }
 
 // ---------- wiring ----------
 $("redir").textContent = REDIRECT;
-$("saveCid").onclick = () => { const v = $("cid").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { alertInline(); return; } store.set("ts_cid", v); login(); };
-function alertInline(){ $("cid").style.borderColor = "var(--danger)"; $("cid").placeholder = "That doesn't look like a Client ID (32 characters)"; $("cid").value = ""; }
+$("saveCid").onclick = () => { const v = $("cid").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { $("cid").style.borderColor = "var(--danger)"; $("cid").value = ""; $("cid").placeholder = "That doesn't look like a Client ID (32 characters)"; return; } store.set("ts_cid", v); login(); };
 $("cid").oninput = () => { $("cid").style.borderColor = ""; };
 $("loginBtn").onclick = login;
 $("resetCid").onclick = () => { store.del("ts_cid"); show("setup"); };
 $("signout").onclick = signOut;
-$("build").onclick = buildAndPlay;
+$("build").onclick = () => buildFrom(selectedSources(), $("count").value);
+$("playPick").onclick = playPicked;
+$("selAll").onclick = () => { $("sources").querySelectorAll("input").forEach(i => i.checked = true); saveSources(); };
+$("selNone").onclick = () => { $("sources").querySelectorAll("input").forEach(i => i.checked = false); saveSources(); };
+$("reloadLists").onclick = () => loadPlaylists().then(() => status("Playlists reloaded.")).catch(handleErr);
 $("refreshDev").onclick = loadDevices;
 $("device").onchange = transferIfNeeded;
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
-$("pp").onclick = async () => { try { await api("PUT", playing ? "me/player/pause" : "me/player/play", { params: deviceParam() }); setTimeout(refreshNowPlaying, 600); } catch (e) { handleErr(e); } };
-$("next").onclick = async () => { try { await api("POST", "me/player/next", { params: deviceParam() }); setTimeout(refreshNowPlaying, 800); } catch (e) { handleErr(e); } };
-$("prev").onclick = async () => { try { await api("POST", "me/player/previous", { params: deviceParam() }); setTimeout(refreshNowPlaying, 800); } catch (e) { handleErr(e); } };
+$("pp").onclick = () => control("pp");
+$("next").onclick = () => control("next");
+$("prev").onclick = () => control("prev");
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) { refreshNowPlaying(); loadDevices(); } });
 
 (async function start(){
   if (!store.get("ts_cid")) return show("setup");
   try { await handleRedirect(); } catch (e) { show("login"); return status(e.message, true); }
   if (!store.get("ts_refresh")) return show("login");
+  // Older sign-ins lack the collaborative-playlist permission; ask once to sign in again.
+  if (store.get("ts_scope") === null || !/playlist-read-collaborative/.test(store.get("ts_scope") || "")) {
+    store.del("ts_refresh"); show("login"); return status("Sign in once more to allow playlist mixing.");
+  }
   show("app");
+  paintModes(pref);
   $("rotation").textContent = store.get("ts_rotation") || "";
+  try { await loadPlaylists(); } catch (e) { handleErr(e); }
   await loadDevices();
   await refreshNowPlaying();
   setInterval(refreshNowPlaying, 5000);
