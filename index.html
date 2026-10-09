@@ -46,8 +46,8 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 .links{display:flex;gap:4px;margin-top:6px}
 
 /* player */
-#player{margin:0 -16px 14px;padding:0 16px 18px;background:linear-gradient(180deg,var(--tint) 0%,var(--bg) 100%);transition:background .6s}
-.art{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--card2);object-fit:cover;display:block;margin:28px 0 20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#player{margin:0 -16px 14px;padding:14px 16px 18px;background:linear-gradient(180deg,var(--tint) 0%,var(--bg) 100%);transition:background .6s}
+.art{width:100%;aspect-ratio:1/1;border-radius:8px;background:var(--card2);object-fit:cover;display:block;margin:24px auto 20px;max-width:min(100%,calc(100vh - 360px));min-width:min(100%,260px);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .titlerow{display:flex;align-items:center;gap:12px}
 .titlerow>div{flex:1;min-width:0}
 .ttl{font-size:22px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -62,7 +62,7 @@ code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:13px;wo
 .ctrls svg{display:block}
 .modebtn{position:relative}
 .modebtn.on{color:var(--accent)}
-.modebtn.busy svg{animation:spin 1s linear infinite}
+.modebtn.busy svg,.pill.busy svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .modebtn .tag{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .dev{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--accent)}
@@ -73,7 +73,8 @@ body.desk #app{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20
 body.desk #side{display:contents}
 body.desk #app .card,body.desk #player{margin:0;border-radius:16px}
 body.desk #player{padding:0 28px 22px;background:linear-gradient(180deg,var(--tint) 0%,#181818 100%)}
-body.desk .art{max-width:340px;margin:24px auto 20px}
+body.desk .art{max-width:340px;min-width:0;margin:24px auto 20px}
+body.desk #player{padding-top:0}
 body.desk #panel{display:flex;flex-direction:column;min-height:0}
 body.desk .pbody{flex:1 1 0;min-height:0;max-height:none !important}
 body.desk #lyExpand{display:none}
@@ -120,6 +121,8 @@ body.desk #lyExpand{display:none}
 .ptabs button{background:none;border:none;border-radius:0;padding:6px 0 8px;min-height:0;font-weight:700;font-size:15px;color:rgba(255,255,255,.6);border-bottom:2px solid transparent;margin-bottom:-1px}
 .ptabs button.on{color:#fff;border-bottom-color:var(--accent)}
 .ptabs .spacer{flex:1}
+.ptabs .pill{margin-bottom:6px;border:none;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:13px;font-weight:600;padding:6px 14px;min-height:32px}
+@media (max-width:420px){.ptabs{gap:12px}.ptabs .pill .pl{display:none}.ptabs .pill{padding:6px 10px}}
 .ptabs .link{color:#fff;font-weight:400;font-size:13px}
 .pbody{max-height:340px;overflow-y:auto;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.35) transparent}
 .pbody::-webkit-scrollbar{width:6px}
@@ -228,7 +231,7 @@ body.desk #lyExpand{display:none}
     <div class="card" id="panel">
       <div class="ptabs">
         <button data-tab="lyrics" class="on">Lyrics</button><button data-tab="queue">Queue</button><button data-tab="recent">Recently played</button>
-        <span class="spacer"></span><button class="link" id="lyExpand">Expand</button>
+        <span class="spacer"></span><button class="pill hidden" id="panelRefresh" aria-label="Refresh" title="Refresh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span class="pl">Refresh</span></button><button class="link" id="lyExpand">Expand</button>
       </div>
       <div id="lyBody" class="pbody"><p class="msg">Play a song to see lyrics.</p></div>
       <div id="qBody" class="pbody hidden"><p class="msg">Loading queue…</p></div>
@@ -504,7 +507,7 @@ async function buildFrom(sourceIds, countSel){
     mixId = await findOrCreatePlaylist(MIX_NAME, "Real random shuffle. Rebuilt by True Shuffle.");
     store.set("ts_mix_id", mixId);
     await replacePlaylist(mixId, mixUris);
-    mixUrisCache = mixUris; store.del("ts_mix_last");
+    mixUrisCache = mixUris; store.del("ts_mix_last"); ctxUriCache.delete(`spotify:playlist:${mixId}`);
     try { store.set("ts_mix_uris", JSON.stringify({ id: mixId, uris: mixUris })); } catch {}
 
     const inMix = new Set(mixUris);
@@ -575,7 +578,7 @@ async function reshuffleCurrent(){
     mixId = mixId || await findOrCreatePlaylist(MIX_NAME, "Real random shuffle. Rebuilt by True Shuffle.");
     store.set("ts_mix_id", mixId);
     await replacePlaylist(mixId, order);
-    mixUrisCache = order;
+    mixUrisCache = order; ctxUriCache.delete(`spotify:playlist:${mixId}`);
     try { store.set("ts_mix_uris", JSON.stringify({ id: mixId, uris: order })); } catch {}
 
     modeLockUntil = Date.now() + 5000; paintModes("true");
@@ -814,6 +817,7 @@ function setTab(t){
   $("lyBody").classList.toggle("hidden", t !== "lyrics"); $("lySrc").classList.toggle("hidden", t !== "lyrics");
   $("qBody").classList.toggle("hidden", t !== "queue"); $("rBody").classList.toggle("hidden", t !== "recent");
   $("lyExpand").classList.toggle("hidden", t !== "lyrics");
+  $("panelRefresh").classList.toggle("hidden", t === "lyrics");
   $("icoLyrics").classList.toggle("on", t === "lyrics"); $("icoQueue").classList.toggle("on", t === "queue");
   if (t === "queue") loadQueue();
   if (t === "recent") renderRecent();
@@ -832,20 +836,52 @@ async function loadQueue(){
     $("qBody").innerHTML = !cur ? '<p class="msg">Nothing playing.</p>'
       : `<p class="qsec">Now playing</p>${qRow(cur, "", "now")}<p class="qsec" style="margin-top:14px">Next from: ${esc(ctx)}</p>` +
         (next.length ? next.map(t => qRow(t, "", "", "1")).join("") : '<p class="msg">Nothing queued.</p>');
-    $("qBody").querySelectorAll(".qrow[data-uri]").forEach(b => b.onclick = () => jumpTo(b.dataset.uri));
+    $("qBody").querySelectorAll(".qrow[data-uri]").forEach(b => b.onclick = () => playTrack(b.dataset.uri));
   } catch (e) { $("qBody").innerHTML = `<p class="msg">${esc(e.message)}</p>`; }
 }
 
-async function jumpTo(uri){
-  if (!np || !np.contextUri || !/:(playlist|album):|:collection$/.test(np.contextUri)) { status("Spotify only lets this jump within a playlist or album.", true); return; }
-  try { modeLockUntil = Date.now() + 3000; await playContext(np.contextUri, false, { uri }); setTimeout(loadQueue, 1200); }
-  catch (e) { handleErr(e); }
+// Is this song part of what's playing? (Spotify silently fails if we ask for a song that isn't.)
+const ctxUriCache = new Map();
+async function contextHas(ctx, uri){
+  if (!ctx) return false;
+  if (/:collection$/.test(ctx)) { const r = await api("GET", "me/library/contains", { params: { uris: uri } }); return Array.isArray(r) && !!r[0]; }
+  const m = ctx.match(/^spotify:playlist:(.+)$/);
+  if (!m) return false;                                   // albums, artists, radio: play the song on its own
+  if (m[1] === mixId && !mixUrisCache) { try { const sv = JSON.parse(store.get("ts_mix_uris") || "null"); if (sv && sv.id === mixId) mixUrisCache = sv.uris; } catch {} }
+  if (m[1] === mixId) {
+    if (mixUrisCache && mixUrisCache.includes(uri)) return true;
+    try { mixUrisCache = await playlistUris(mixId); store.set("ts_mix_uris", JSON.stringify({ id: mixId, uris: mixUrisCache })); } catch { return false; }   // re-check: the mix may have been rebuilt elsewhere
+    return mixUrisCache.includes(uri);
+  }
+  if (!ctxUriCache.has(ctx)) { try { ctxUriCache.set(ctx, new Set(await playlistUris(m[1]))); } catch { return false; } }
+  return ctxUriCache.get(ctx).has(uri);
+}
+
+async function playTrack(uri){
+  if (busy || !uri) return;
+  try {
+    const ctx = np && np.contextUri;
+    status("Starting that song…");
+    if (ctx && await contextHas(ctx, uri)) {
+      modeLockUntil = Date.now() + 3000;
+      await playContext(ctx, false, { uri });
+      status(`Playing from ${$("ctxName").textContent || "this playlist"}, in its order.`);
+    } else {
+      const dev = deviceParam();
+      try { await api("PUT", "me/player/shuffle", { params: { ...dev, state: "false" } }); } catch {}
+      await api("PUT", "me/player/play", { params: dev, body: { uris: [uri] } });
+      modeLockUntil = Date.now() + 4000; pref = "off"; paintModes("off");
+      status("That song isn't in this playlist, so shuffle is off and it's playing on its own.");
+    }
+    setTimeout(() => { refreshNowPlaying(); if (activeTab === "queue") loadQueue(); }, 1200);
+  } catch (e) { handleErr(e); }
 }
 
 function ago(iso){ const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "now" : m < 60 ? m + "m ago" : Math.round(m / 60) + "h ago"; }
 function renderRecent(){
-  $("rBody").innerHTML = recentPlays.length ? recentPlays.map(p => qRow(p.track, `<span class="when">${ago(p.played_at)}</span>`)).join("")
+  $("rBody").innerHTML = recentPlays.length ? recentPlays.map(p => qRow(p.track, `<span class="when">${ago(p.played_at)}</span>`, "", "1")).join("")
     : '<p class="msg">No recent plays yet.</p>';
+  $("rBody").querySelectorAll(".qrow[data-uri]").forEach(b => b.onclick = () => playTrack(b.dataset.uri));
 }
 
 // ================= proof =================
@@ -906,6 +942,10 @@ $("pp").onclick = () => control("pp");
 $("shuf").onclick = cycleShuffle;
 $("rep").onclick = cycleRepeat;
 $("icoLyrics").onclick = () => setTab("lyrics");
+$("panelRefresh").onclick = async () => {
+  const b = $("panelRefresh"); b.classList.add("busy");
+  try { if (activeTab === "queue") await loadQueue(); else { await loadProof(); renderRecent(); } } finally { b.classList.remove("busy"); }
+};
 $("icoQueue").onclick = () => setTab(activeTab === "queue" ? "lyrics" : "queue");
 $("next").onclick = () => control("next");
 $("prev").onclick = () => control("prev");
