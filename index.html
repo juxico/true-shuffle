@@ -171,7 +171,7 @@ body.desk .mixgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr
     <button class="viewbtn" id="viewBtn" aria-label="Switch layout">Desktop view</button>
     <div class="ctx" id="ctxName">True Shuffle</div>
     <div class="topright">
-      <a class="viewbtn privbtn" id="privBtn" href="privacy.html" aria-label="Privacy policy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg><span class="pl">Privacy</span></a>
+      <a class="viewbtn privbtn hidden" id="privBtn" href="privacy.html" aria-label="Privacy policy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg><span class="pl">Privacy</span></a>
       <button class="link hidden" id="signout" style="text-align:right">Sign out</button>
     </div>
   </div>
@@ -280,6 +280,7 @@ const HIST_MAX = 3000;
 const LIKED = "__liked__";
 const API = "https://api.spotify.com/v1";
 const DEFAULT_CLIENT_ID = "e4c6e17e02df4b83ac22569ab609545a";   // this app's public ID (not a secret); anyone added in the Spotify dashboard can sign in
+const SHOW_PRIVACY = false;   // set to true to show the Privacy button once the policy details are filled in
 const DEVICE_KEYS = ["ts_cid", "ts_view"];                       // kept on sign-out: app setting and screen layout, nothing about the person
 const REDIRECT = location.origin + location.pathname;
 const $ = id => document.getElementById(id);
@@ -937,6 +938,7 @@ applyView(store.get("ts_view"));
 $("redir").textContent = REDIRECT;
 $("saveCid").onclick = () => { const v = $("cid").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { $("cid").style.borderColor = "var(--danger)"; $("cid").value = ""; $("cid").placeholder = "That doesn't look like a Client ID (32 characters)"; return; } store.set("ts_cid", v); login(); };
 $("cid").oninput = () => { $("cid").style.borderColor = ""; };
+if (SHOW_PRIVACY) $("privBtn").classList.remove("hidden");
 $("loginBtn").onclick = () => { $("loginBtn").disabled = true; $("loginBtn").textContent = "Opening Spotify…"; login(); };
 if (/[?&]setup\b/.test(location.search)) $("devOpts").classList.remove("hidden");
 $("resetCid").onclick = () => { store.del("ts_cid"); show("setup"); };
