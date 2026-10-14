@@ -78,6 +78,8 @@ body.desk #player{padding-top:0}
 body.desk #panel{display:flex;flex-direction:column;min-height:0}
 body.desk .pbody{flex:1 1 0;min-height:0;max-height:none !important}
 body.desk #lyExpand{display:none}
+body.desk #mixCard{grid-column:1/-1}
+body.desk .mixgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:32px;align-items:start}
 .viewbtn{font-size:13px;padding:6px 10px;min-height:32px;border-radius:16px;background:var(--card2)}
 /* device picker */
 .dev{background:none;border:none;padding:6px 0;min-height:0;cursor:pointer;color:var(--accent);font-size:13px}
@@ -180,9 +182,11 @@ body.desk #lyExpand{display:none}
 
   <section id="login" class="hidden">
     <div class="card">
-      <p style="margin:0 0 12px">Sign in to Spotify to build mixes and control playback.</p>
+      <p style="margin:0 0 6px;font-weight:600">Welcome to True Shuffle</p>
+      <p style="margin:0 0 12px">Sign in with your Spotify account to shuffle your music and control playback. Spotify Premium is needed to control playback.</p>
       <button class="primary" id="loginBtn">Sign in with Spotify</button>
-      <div style="margin-top:8px"><button class="link" id="resetCid">Change Client ID</button></div>
+      <p class="hint">Spotify will show which account you're signing in with. Use "Not you?" there to switch accounts.</p>
+      <div style="margin-top:4px" id="devOpts" class="hidden"><button class="link" id="resetCid">Use a different app Client ID</button></div>
     </div>
   </section>
 
@@ -241,32 +245,21 @@ body.desk #lyExpand{display:none}
 
     <div class="card mixcard" id="mixCard">
       <div class="head"><b>New mix</b><button class="pill" id="reloadLists"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Reload playlists</button></div>
+      <div class="mixgrid"><div class="mixcol">
       <p class="mlabel">Mix from</p>
       <div class="chips" id="sources"><span class="dsnote">Loading your playlists…</span></div>
       <div class="mlinks"><button class="link" id="selAll">Select all</button><button class="link" id="selNone">Clear</button></div>
       <p class="mnote" id="srcSummary"></p>
+      </div><div class="mixcol">
       <p class="mlabel">Length</p>
       <div class="chips" id="sizes">
         <button data-v="50">50</button><button data-v="100">100</button><button data-v="150">150</button><button data-v="300">300</button><button data-v="500">500</button><button data-v="all">Everything</button>
       </div>
       <button class="buildbtn" id="build">Build new mix and play</button>
       <p class="mnote" id="rotation"></p>
+      </div></div>
     </div>
 
-    <div class="card mixcard" id="proof">
-      <div class="row" style="align-items:center;margin-bottom:8px"><b style="font-size:16px">Proof it's working</b><button class="pill" id="proofRefresh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Refresh</button></div>
-      <div class="stats">
-        <div class="stat"><div class="v" id="pUnique">–</div><div class="k">Unique songs in your last plays</div></div>
-        <div class="stat"><div class="v" id="pRepeats">–</div><div class="k">Repeats in your last plays</div></div>
-      </div>
-      <div class="cmp" id="pCmp"></div>
-      <p class="mlabel">Top artists in your last plays</p>
-      <div id="pArtists"></div>
-      <p class="mlabel">Rotation progress</p>
-      <div class="meter"><i id="pMeter"></i></div>
-      <p class="mnote" id="pRotation">Build a mix to start the rotation.</p>
-      <p class="mnote">Spotify shares your last 50 plays (songs played at least about 30 seconds). Nothing here is stored anywhere new.</p>
-    </div>
 
     </div>
   </section>
@@ -279,6 +272,8 @@ const HIST_NAME = "True Shuffle · history";
 const HIST_MAX = 3000;
 const LIKED = "__liked__";
 const API = "https://api.spotify.com/v1";
+const DEFAULT_CLIENT_ID = "e4c6e17e02df4b83ac22569ab609545a";   // this app's public ID (not a secret); anyone added in the Spotify dashboard can sign in
+const DEVICE_KEYS = ["ts_cid", "ts_view"];                       // kept on sign-out: app setting and screen layout, nothing about the person
 const REDIRECT = location.origin + location.pathname;
 const $ = id => document.getElementById(id);
 
@@ -301,7 +296,7 @@ async function login(){
   const verifier = rand(64), state = rand(16);
   store.set("ts_verifier", verifier); store.set("ts_state", state);
   const p = new URLSearchParams({ client_id: store.get("ts_cid"), response_type: "code", redirect_uri: REDIRECT,
-    code_challenge_method: "S256", code_challenge: await challenge(verifier), scope: SCOPES, state });
+    code_challenge_method: "S256", code_challenge: await challenge(verifier), scope: SCOPES, state, show_dialog: "true" });
   location.href = "https://accounts.spotify.com/authorize?" + p;
 }
 
@@ -337,7 +332,15 @@ async function accessToken(){
   return store.get("ts_access");
 }
 
-function signOut(){ ["ts_access","ts_expires","ts_refresh"].forEach(store.del); show("login"); }
+// Sign out = forget everything about this person on this device, then start fresh.
+function signOut(manual){
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith("ts_") && !DEVICE_KEYS.includes(k)).forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch {}
+  if (manual) { try { sessionStorage.setItem("ts_signed_out", "1"); } catch {} }
+  location.replace(REDIRECT);    // reload clears every song, playlist, cache and picture held in memory
+}
 
 // ---------- API ----------
 // Spotify's player endpoints reply 200 with a plain-text id, not JSON. Never assume JSON.
@@ -704,11 +707,12 @@ async function refreshNowPlaying(){
 
     const inMix = !!(np.contextUri && mixId && np.contextUri === `spotify:playlist:${mixId}`);
     if (inMix) store.set("ts_mix_last", np.uri);
+    if (np.contextUri && /:(playlist|album):|:collection$/.test(np.contextUri)) store.set("ts_last_ctx", np.contextUri);
     if (Date.now() > modeLockUntil) { pref = inMix ? "true" : "off"; paintModes(pref); }   // green = playing a True Shuffle order
     paintRepeat(np.repeat);
     $("modeHint").textContent = np.smart ? "Smart Shuffle is on. Turn it off in the Spotify app so True Shuffle plays in order."
       : np.shuffle ? "Spotify's own shuffle is on in the app. Turn it off there, or tap shuffle here for a True Shuffle." : "";
-    if (changed) { loadLyrics(item); if (proofLoaded) setTimeout(loadProof, 4000); if (activeTab === "queue") setTimeout(loadQueue, 600); }
+    if (changed) { loadLyrics(item); if (recentLoaded) setTimeout(loadRecent, 4000); if (activeTab === "queue") setTimeout(loadQueue, 600); }
     paintProgress();
   } catch (e) { if (e.signedOut) signOut(); }
 }
@@ -717,17 +721,30 @@ async function control(kind){
   try {
     const dev = deviceParam();
     if (kind === "pp"){
-      const s = await api("GET", "me/player", { okMissing: true });   // fresh state, so we never "play" while already playing
-      if (!s || !s.item) {                                              // nothing loaded: start the mix, or Liked Songs
+      // Always check Spotify first: the music may have been started, paused or moved on another device.
+      const s = await api("GET", "me/player", { okMissing: true });
+      await refreshNowPlaying();
+      if (s && s.item && s.is_playing) {                       // playing somewhere: pause it
+        if (np) { np.progressMs = livePos(); np.at = Date.now(); }
+        playing = false; $("pp").innerHTML = ICON_PLAY;
+        await api("PUT", "me/player/pause", { params: s.device && s.device.id ? { device_id: s.device.id } : dev });
+      } else if (s && s.item) {                                 // paused session exists: pick up exactly where it stopped
+        if (!devId) await loadDevices();
+        playing = true; $("pp").innerHTML = ICON_PAUSE;
+        if (devId && s.device && s.device.id !== devId)
+          await api("PUT", "me/player", { body: { device_ids: [devId], play: true } });   // move it here, same song and spot
+        else
+          await api("PUT", "me/player/play", { params: s.device && s.device.id ? { device_id: s.device.id } : dev });
+        status("Picked up where you left off.");
+      } else {                                                  // Spotify has no session anymore: start the last playlist over
+        await loadDevices();
         me = me || await api("GET", "me");
-        await playContext(mixId ? `spotify:playlist:${mixId}` : likedContext(), false);
-        status(mixId ? "Playing your True Shuffle mix." : "Playing Liked Songs in order.");
-        return;
+        const last = store.get("ts_last_ctx") || (mixId ? `spotify:playlist:${mixId}` : likedContext());
+        await playContext(last, false);
+        status("Nothing to pick up, so the last playlist is starting from the top.");
       }
-      const isPlaying = !!(s && s.is_playing);
-      if (np) { np.progressMs = livePos(); np.at = Date.now(); }
-      playing = !isPlaying; $("pp").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
-      await api("PUT", isPlaying ? "me/player/pause" : "me/player/play", { params: dev });
+      setTimeout(refreshNowPlaying, 900);
+      return;
     } else {
       await api("POST", kind === "next" ? "me/player/next" : "me/player/previous", { params: dev });
     }
@@ -884,35 +901,15 @@ function renderRecent(){
   $("rBody").querySelectorAll(".qrow[data-uri]").forEach(b => b.onclick = () => playTrack(b.dataset.uri));
 }
 
-// ================= proof =================
-let proofLoaded = false;
-async function loadProof(){
+// ================= recently played =================
+let recentLoaded = false;
+async function loadRecent(){
   try {
     const r = await api("GET", "me/player/recently-played", { params: { limit: 50 } });
-    const plays = (r.items || []).filter(p => p.track && p.track.uri);
-    proofLoaded = true; recentPlays = plays; if (activeTab === "recent") renderRecent();
-    if (!plays.length){ $("pUnique").textContent = "0"; $("pRepeats").textContent = "0"; return; }
-    const isMix = p => mixId && p.context && p.context.uri === `spotify:playlist:${mixId}`;
-    const rep = list => list.length - new Set(list.map(p => p.track.uri)).size;
-    $("pUnique").textContent = `${new Set(plays.map(p => p.track.uri)).size} of ${plays.length}`;
-    $("pRepeats").textContent = String(rep(plays));
-    const mix = plays.filter(isMix), other = plays.filter(p => !isMix(p));
-    const row = (name, list) => `<span>${name}</span><span>${list.length} plays</span><span>${list.length ? rep(list) + " repeats" : "–"}</span>`;
-    $("pCmp").innerHTML = `<span class="h">Source</span><span class="h">Plays</span><span class="h">Repeats</span>` + row("True Shuffle mix", mix) + row("Everything else", other);
-    const counts = {}; plays.forEach(p => { const a = (p.track.artists && p.track.artists[0] && p.track.artists[0].name) || "?"; counts[a] = (counts[a] || 0) + 1; });
-    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5), max = top.length ? top[0][1] : 1;
-    $("pArtists").innerHTML = top.map(([a, n]) => `<div class="abar"><span class="nm">${esc(a)}</span><span class="b" style="width:${Math.max(6, n / max * 140)}px"></span><span>${n}</span></div>`).join("");
-    const first = plays[plays.length - 1], hrs = (Date.now() - new Date(first.played_at)) / 36e5;
-    $("pCmp").insertAdjacentHTML("beforeend", `<span class="h" style="grid-column:1/-1">Covers about the last ${hrs < 1 ? Math.max(1, Math.round(hrs * 60)) + " minutes" : Math.round(hrs) + " hours"}.</span>`);
-  } catch (e) {
-    if (e.code === 403 || /scope/i.test(e.message)) { $("pRotation").textContent = "Sign in again to allow reading recently played songs."; return; }
-    handleErr(e);
-  }
-  const pool = Number(store.get("ts_pool") || 0), heard = Number(store.get("ts_heard") || 0);
-  if (pool){ const pct = Math.round(heard / pool * 100); $("pMeter").style.width = pct + "%";
-    $("pRotation").textContent = `${heard} of ${pool} songs in your last selection have been in a mix (${pct}%). ${Math.max(0, pool - heard)} still waiting their turn.`; }
+    recentPlays = (r.items || []).filter(p => p.track && p.track.uri);
+    recentLoaded = true; if (activeTab === "recent") renderRecent();
+  } catch (e) { if (activeTab === "recent") $("rBody").innerHTML = `<p class="msg">${esc(e.message)}</p>`; }
 }
-$("proofRefresh").onclick = loadProof;
 setInterval(() => { if (playing && !document.hidden) paintProgress(); }, 250);
 
 // ---------- layout ----------
@@ -930,8 +927,9 @@ $("redir").textContent = REDIRECT;
 $("saveCid").onclick = () => { const v = $("cid").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { $("cid").style.borderColor = "var(--danger)"; $("cid").value = ""; $("cid").placeholder = "That doesn't look like a Client ID (32 characters)"; return; } store.set("ts_cid", v); login(); };
 $("cid").oninput = () => { $("cid").style.borderColor = ""; };
 $("loginBtn").onclick = login;
+if (/[?&]setup\b/.test(location.search)) $("devOpts").classList.remove("hidden");
 $("resetCid").onclick = () => { store.del("ts_cid"); show("setup"); };
-$("signout").onclick = signOut;
+$("signout").onclick = () => signOut(true);
 $("build").onclick = () => buildFrom(selectedSources(), mixSize);
 $("selAll").onclick = () => setAllSources(true);
 $("selNone").onclick = () => setAllSources(false);
@@ -944,17 +942,19 @@ $("rep").onclick = cycleRepeat;
 $("icoLyrics").onclick = () => setTab("lyrics");
 $("panelRefresh").onclick = async () => {
   const b = $("panelRefresh"); b.classList.add("busy");
-  try { if (activeTab === "queue") await loadQueue(); else { await loadProof(); renderRecent(); } } finally { b.classList.remove("busy"); }
+  try { if (activeTab === "queue") await loadQueue(); else { await loadRecent(); renderRecent(); } } finally { b.classList.remove("busy"); }
 };
 $("icoQueue").onclick = () => setTab(activeTab === "queue" ? "lyrics" : "queue");
 $("next").onclick = () => control("next");
 $("prev").onclick = () => control("prev");
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) { refreshNowPlaying(); loadDevices(); loadProof(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) { refreshNowPlaying(); loadDevices(); loadRecent(); } });
 
 (async function start(){
+  if (!store.get("ts_cid") && DEFAULT_CLIENT_ID) store.set("ts_cid", DEFAULT_CLIENT_ID);
   if (!store.get("ts_cid")) return show("setup");
+  let signedOut = false; try { signedOut = sessionStorage.getItem("ts_signed_out") === "1"; sessionStorage.removeItem("ts_signed_out"); } catch {}
   try { await handleRedirect(); } catch (e) { show("login"); return status(e.message, true); }
-  if (!store.get("ts_refresh")) return show("login");
+  if (!store.get("ts_refresh")) { show("login"); if (signedOut) status("Signed out. Nothing from that account is left on this device."); return; }
   // Older sign-ins lack the collaborative-playlist permission; ask once to sign in again.
   if (store.get("ts_scope") === null || !/user-read-recently-played/.test(store.get("ts_scope") || "")) {
     store.del("ts_refresh"); show("login"); return status("Sign in once more to allow playlist mixing and play stats.");
@@ -965,7 +965,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && !$
   try { await loadPlaylists(); } catch (e) { handleErr(e); }
   await loadDevices();
   await refreshNowPlaying();
-  loadProof();
+  loadRecent();
   setInterval(refreshNowPlaying, 5000);
 })();
 </script>
