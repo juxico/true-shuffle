@@ -81,6 +81,10 @@ body.desk #lyExpand{display:none}
 body.desk #mixCard{grid-column:1/-1}
 body.desk .mixgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:32px;align-items:start}
 .viewbtn{font-size:13px;padding:6px 10px;min-height:32px;border-radius:16px;background:var(--card2)}
+.topright{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.privbtn{display:inline-flex;align-items:center;gap:6px;color:var(--text);text-decoration:none;border:1px solid var(--border)}
+.privbtn:hover{background:#333}
+@media (max-width:420px){.privbtn .pl{display:none}.privbtn{padding:6px 9px}}
 /* device picker */
 .dev{background:none;border:none;padding:6px 0;min-height:0;cursor:pointer;color:var(--accent);font-size:13px}
 .dev .chev{opacity:.8}
@@ -166,7 +170,10 @@ body.desk .mixgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr
   <div class="topbar">
     <button class="viewbtn" id="viewBtn" aria-label="Switch layout">Desktop view</button>
     <div class="ctx" id="ctxName">True Shuffle</div>
-    <button class="link hidden" id="signout" style="text-align:right">Sign out</button>
+    <div class="topright">
+      <a class="viewbtn privbtn" id="privBtn" href="privacy.html" aria-label="Privacy policy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg><span class="pl">Privacy</span></a>
+      <button class="link hidden" id="signout" style="text-align:right">Sign out</button>
+    </div>
   </div>
   <p id="status"></p>
 
@@ -186,7 +193,6 @@ body.desk .mixgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr
       <p style="margin:0 0 12px">Sign in with your Spotify account to shuffle your music and control playback. Spotify Premium is needed to control playback.</p>
       <button class="primary" id="loginBtn">Sign in with Spotify</button>
       <p class="hint">For privacy, any Spotify account previously signed in on this browser is signed out first, so you'll start from a blank Spotify sign-in.</p>
-      <p class="hint"><a href="privacy.html" style="color:inherit">Privacy policy</a></p>
       <div style="margin-top:4px" id="devOpts" class="hidden"><button class="link" id="resetCid">Use a different app Client ID</button></div>
     </div>
   </section>
@@ -264,7 +270,7 @@ body.desk .mixgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr
 
     </div>
   </section>
-  <p class="hint" style="text-align:center;margin-top:18px"><a href="privacy.html" style="color:inherit">Privacy policy</a></p>
+  <div style="text-align:center;margin-top:18px"><a class="viewbtn privbtn" href="privacy.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></svg><span>Privacy policy</span></a></div>
 </main>
 <script>
 "use strict";
@@ -294,34 +300,16 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", "
 function rand(n){ const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"[b % 66]).join(""); }
 async function challenge(v){ const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v)); return btoa(String.fromCharCode(...new Uint8Array(d))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 
-// Spotify keeps its own sign-in cookie. Clear it in a small window so the next sign-in starts blank
-// and never shows the previous person's name or photo. Must run from a click (popup rule).
-function clearSpotifySession(){
-  return new Promise(resolve => {
-    let w = null;
-    try { w = window.open("https://accounts.spotify.com/logout", "ts_spotify_logout", "width=420,height=520,noopener=false"); } catch {}
-    if (!w) return resolve(false);                        // popup blocked: caller decides what to do
-    setTimeout(() => { try { w.close(); } catch {} resolve(true); }, 2500);
-  });
-}
-
-async function startSignIn(){
-  const btn = $("loginBtn"); btn.disabled = true; btn.textContent = "Preparing a private sign-in…";
-  const cleared = await clearSpotifySession();
-  if (!cleared) {
-    btn.disabled = false; btn.textContent = "Sign in with Spotify";
-    status("Your browser blocked a small window this page needs. Allow pop-ups for this site, then tap Sign in again.", true);
-    return;
-  }
-  login();
-}
-
+// Spotify keeps its own sign-in cookie on each browser. To never show the previous person's
+// name or photo, every sign-in goes through Spotify's sign-out first, which then continues
+// straight to Spotify's sign-in for this app. One redirect, no extra window or page.
 async function login(){
   const verifier = rand(64), state = rand(16);
   store.set("ts_verifier", verifier); store.set("ts_state", state);
   const p = new URLSearchParams({ client_id: store.get("ts_cid"), response_type: "code", redirect_uri: REDIRECT,
     code_challenge_method: "S256", code_challenge: await challenge(verifier), scope: SCOPES, state, show_dialog: "true" });
-  location.href = "https://accounts.spotify.com/authorize?" + p;
+  const authorizeUrl = "https://accounts.spotify.com/authorize?" + p;
+  location.href = "https://accounts.spotify.com/logout?continue=" + encodeURIComponent(authorizeUrl);
 }
 
 async function tokenRequest(body){
@@ -362,8 +350,8 @@ function signOut(manual){
     Object.keys(localStorage).filter(k => k.startsWith("ts_") && !DEVICE_KEYS.includes(k)).forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
   } catch {}
-  if (manual) { try { sessionStorage.setItem("ts_signed_out", "1"); } catch {} status("Signing out…"); clearSpotifySession(); }
-  setTimeout(() => location.replace(REDIRECT), manual ? 2700 : 0);    // reload clears everything held in memory
+  if (manual) { try { sessionStorage.setItem("ts_signed_out", "1"); } catch {} }
+  location.replace(REDIRECT);    // reload clears everything held in memory; Spotify's own sign-in is cleared at the next sign-in
 }
 
 // ---------- API ----------
@@ -950,7 +938,7 @@ applyView(store.get("ts_view"));
 $("redir").textContent = REDIRECT;
 $("saveCid").onclick = () => { const v = $("cid").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { $("cid").style.borderColor = "var(--danger)"; $("cid").value = ""; $("cid").placeholder = "That doesn't look like a Client ID (32 characters)"; return; } store.set("ts_cid", v); login(); };
 $("cid").oninput = () => { $("cid").style.borderColor = ""; };
-$("loginBtn").onclick = startSignIn;
+$("loginBtn").onclick = () => { $("loginBtn").disabled = true; $("loginBtn").textContent = "Opening Spotify…"; login(); };
 if (/[?&]setup\b/.test(location.search)) $("devOpts").classList.remove("hidden");
 $("resetCid").onclick = () => { store.del("ts_cid"); show("setup"); };
 $("signout").onclick = () => signOut(true);
